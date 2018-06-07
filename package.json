@@ -1,0 +1,25 @@
+{
+  "name": "restaurant-1",
+  "version": "1.0.0",
+  "description": "--- #### _Three Stage Course Material Project - Restaurant Reviews_",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "imgopt": "node optimizeImages.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aretheregods/mws-restaurant-stage-1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aretheregods/mws-restaurant-stage-1/issues"
+  },
+  "homepage": "https://github.com/aretheregods/mws-restaurant-stage-1#readme",
+  "dependencies": {
+    "imagemin": "^5.3.1",
+    "imagemin-mozjpeg": "^7.0.0"
+  }
+}
