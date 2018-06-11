@@ -1,4 +1,10 @@
-var CACHE = 'restaurant-v-1';
+/**
+* Borrowed in part from
+* Mozilla's serviceworke.rs site
+* But altered to fit these purposes
+**/
+
+const CACHE = 'restaurant-v-1';
 
 self.addEventListener('install', function(evt) {
   console.log('The service worker is being installed.');
