@@ -7,7 +7,7 @@ self.addEventListener('install', function(evt) {
 });
 
 self.addEventListener('fetch', function(evt) {
-  console.log('The service worker is serving the asset.');
+  console.log('The service worker is serving all the things.');
   
   evt.respondWith(fromCache(evt.request));
   evt.waitUntil(update(evt.request));
@@ -37,9 +37,6 @@ function precache() {
   });
 }
 
-// Open the cache where the assets were stored and search for the requested
-// resource. Notice that in case of no matching, the promise still resolves
-// but it does with `undefined` as value.
 function fromCache(request) {
   return caches.open(CACHE).then(function (cache) {
     return cache.match(request).then(function (matching) {
@@ -48,8 +45,6 @@ function fromCache(request) {
   });
 }
 
-// Update consists in opening the cache, performing a network request and
-// storing the new response data.
 function update(request) {
   return caches.open(CACHE).then(function (cache) {
     return fetch(request).then(function (response) {
