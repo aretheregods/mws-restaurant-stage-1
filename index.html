@@ -17,7 +17,7 @@
   </header>
 
   <main id="maincontent">
-    <section id="map-container">
+    <section id="map-container" aria-label="map" role="application">
       <div id="map"></div>
     </section>
     <!-- Added an id here for styling purposes -->
@@ -51,7 +51,7 @@
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('sw.js')
         .then(function(registration) {
-          console.log('Registration successful with scopre' + registration.scope);
+          console.log('Registration successful with scope: ' + registration.scope);
         })
         .catch(function(err) {
           console.log('Registration failed with error: ' + err);
