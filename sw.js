@@ -27,7 +27,6 @@ function precache() {
       './js/dbhelper.js',
       './js/main.js',
       './js/restaurant_info.js',
-      './data/restaurants.json',
       './css/styles.css',
       './img_opt/1.jpg',
       './img_opt/2.jpg',

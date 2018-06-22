@@ -4,6 +4,7 @@
   "description": "--- #### _Three Stage Course Material Project - Restaurant Reviews_",
   "main": "index.js",
   "scripts": {
+    "build": "npx google-closure-compiler-js --compilationLevel ADVANCED --jsCode ./js/dbhelper.js ./js/idbhelper.js ./js/main.js > ./build/main.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "imgopt": "node optimizeImages.js"
   },
@@ -19,6 +20,10 @@
   },
   "homepage": "https://github.com/aretheregods/mws-restaurant-stage-1#readme",
   "dependencies": {
+    "idb": "^2.1.2"
+  },
+  "devDependencies": {
+    "google-closure-compiler-js": "^20180610.0.0",
     "imagemin": "^5.3.1",
     "imagemin-mozjpeg": "^7.0.0"
   }
