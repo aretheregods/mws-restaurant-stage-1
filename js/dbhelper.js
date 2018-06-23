@@ -1,3 +1,5 @@
+import { IDBHelper } from 'idbhelper.js';
+
 /**
  * Common database helper functions.
  */
