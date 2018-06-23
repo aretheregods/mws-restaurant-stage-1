@@ -25,8 +25,8 @@ export class IDBHelper {
     return 'restaurants';
   }
 
-  constructor() {
-    this._DBObject = IDBHelper.openIDBInstance();
+  static get _DBObject() {
+    return IDBHelper.openIDBInstance();
   }
 
   static openIDBInstance() {
@@ -44,6 +44,22 @@ export class IDBHelper {
     })  
   }
 
-  static fetchRestaurantsFromIDB() {}
+  static putRestaurantsInIDB(restaurants) {
+    IDBHelper._DBObject.then(db => {
+      if(!db) return;
+      const trans = db.transaction('restaurants', 'readwrite');
+      const store = trans.objectStore('restaurants');
+      restaurants.forEach(restaurant => {
+        store.put(restaurant);
+      })
+    })
+  }
+
+  static fetchRestaurantsFromIDB() {
+    return IDBHelper._DBObject.then(db => {
+      if(!db) return;
+      return db.transaction('restaurants').objectStore('restaurants').getAll();
+    })
+  }
 
 }
