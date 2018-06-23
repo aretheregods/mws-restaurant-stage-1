@@ -6,6 +6,7 @@ import idb from 'idb';
 export class IDBHelper {
   /**
  	 * Name of the database to use
+   * @return {string}
  	 */
   static get DB_NAME() {
     return 'restaurants-db';
@@ -13,22 +14,33 @@ export class IDBHelper {
 
   /**
    * Current version number of DB
+   * @return {number}
    */
+
   static get DB_VERSION() {
     return 1;
   }
 
   /**
    * Name of restaurant store in database
+   * @return {string}
    */ 
   static get STORE_NAME() {
     return 'restaurants';
   }
 
+  /**
+   * DB object on which requests are handled
+   * @return {object}
+   */
   static get _DBObject() {
     return IDBHelper.openIDBInstance();
   }
 
+  /**
+   * Opened database
+   * @return {object}
+   */
   static openIDBInstance() {
     // Check that indexeddb is available
     if (!navigator.serviceWorker) {
@@ -44,6 +56,11 @@ export class IDBHelper {
     })  
   }
 
+  /**
+   * Adding records to the DB store
+   * @param {Array} restaurants
+   * @return {void}
+   */
   static putRestaurantsInIDB(restaurants) {
     IDBHelper._DBObject.then(db => {
       if(!db) return;
@@ -55,6 +72,10 @@ export class IDBHelper {
     })
   }
 
+  /**
+   * Getting all records from DB store
+   * @return {object} | void
+   */
   static fetchRestaurantsFromIDB() {
     return IDBHelper._DBObject.then(db => {
       if(!db) return;
