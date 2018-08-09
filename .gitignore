@@ -3,4 +3,5 @@ img_opt/
 build/
 server/
 sw.js
+!service_worker/sw.js
 webpack.config.js
