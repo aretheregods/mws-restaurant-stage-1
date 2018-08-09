@@ -42,6 +42,7 @@ Run 'npm run build'
 
 
 Open a new terminal window and go git (:P) the server
+From [here](https://github.com/aretheregods/mws-restaurant-stage-2.git)
 
 
 Run 'npm i' in the resulting folder
