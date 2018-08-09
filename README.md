@@ -35,10 +35,12 @@ Run 'npm run build'
 ## For Server Stuff
 
 
-Open a new terminal window in the app directory
+Open a new terminal window and go git (:P) the server
 
 
-Run 'npm run start:server'
+Run 'npm i' in the resulting folder
+
+Run 'npm start' once that's done
 
 
 Open localhost:8080 in the browser
