@@ -44,6 +44,8 @@ export class DBHelper {
   }
 
   /**
+   * Some browsers are weird with fetch
+   * So, this is a really simple polyfill
    * Fetch all restaurants from the Internet
    */
   static fetchRemote(url, method = 'get', body) {
