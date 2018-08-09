@@ -1,40 +1,71 @@
-import { IDBHelper } from 'idbhelper.js';
-
 /**
- * Common database helper functions.
+ * Common data helper functions.
  */
+import {
+  fetchRestaurantsFromIDB,
+  restaurantsInIDB,
+  fetchRestaurantFromIDB
+} from './idbhelper.js';
+
 export class DBHelper {
 
   /**
    * Database URL.
    * Points to restaurants API URL
+   * @return {string}
    */
   static get DATABASE_URL() {
     const port = 1337 // Change this to your server port
-    return `http://localhost:${port}/restaurants`;
+    return `http://localhost:${port}/`;
+  }
+
+  static initDataStore() {
+    return restaurantsInIDB().then(val => {
+      return val ?
+        fetchRestaurantsFromIDB() :
+        this.fetchRestaurantsRemote();
+    })
+  }
+
+  static initRestaurantDataStore(id) {
+    return restaurantsInIDB().then(val => {
+      return val ?
+        fetchRestaurantFromIDB(id) :
+        this.fetchRestaurantRemote(id);
+    })
+  }
+
+  static fetchRestaurantsRemote() {
+    return this.fetchRemote(`${this.DATABASE_URL}restaurants`);
+  }
+
+  static fetchRestaurantRemote(id) {
+    return this.fetchRemote(`${this.DATABASE_URL}restaurants/${id}`);
   }
 
   /**
-   * Fetch all restaurants.
+   * Fetch all restaurants from the Internet
    */
-  static fetchRestaurants(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('GET', DBHelper.DATABASE_URL);
-    xhr.onload = () => {
-      if (xhr.status === 200) { // Got a success response from server!
-        const restaurants = JSON.parse(xhr.responseText);
-        // const restaurants = json.restaurants;
-        callback(null, restaurants);
-      } else { // Oops!. Got an error from server.
-        const error = (`Request failed. Returned status of ${xhr.status}`);
-        callback(error, null);
+  static fetchRemote(url, method = 'get', body) {
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.onerror = reject;
+      xhr.onload = function() {
+        return resolve({
+          json: function() {
+            return Promise.resolve(xhr.responseText).then(JSON.parse);
+          }
+        })
       }
-    };
-    xhr.send();
+      xhr.open(method, url);
+      body ? xhr.send(body) : xhr.send();
+    })
   }
 
   /**
    * Fetch a restaurant by its ID.
+   * @param {!Object<?,?>|string} id
+   * @param {function(...*)=} callback
    */
   static fetchRestaurantById(id, callback) {
     // fetch all restaurants with proper error handling.
@@ -54,6 +85,8 @@ export class DBHelper {
 
   /**
    * Fetch restaurants by a cuisine type with proper error handling.
+   * @param {!string} cuisine
+   * @param {function(...*)=} callback
    */
   static fetchRestaurantByCuisine(cuisine, callback) {
     // Fetch all restaurants  with proper error handling
@@ -70,6 +103,9 @@ export class DBHelper {
 
   /**
    * Fetch restaurants by a neighborhood with proper error handling.
+   * @param {!string} neighborhood
+   * @param {function(...*)=} callback
+   * @return {void}
    */
   static fetchRestaurantByNeighborhood(neighborhood, callback) {
     // Fetch all restaurants
@@ -86,6 +122,9 @@ export class DBHelper {
 
   /**
    * Fetch restaurants by a cuisine and a neighborhood with proper error handling.
+   * @param {!string} cuisine
+   * @param {!string} neighborhood
+   * @param {function(...*)=} callback
    */
   static fetchRestaurantByCuisineAndNeighborhood(cuisine, neighborhood, callback) {
     // Fetch all restaurants
@@ -107,6 +146,7 @@ export class DBHelper {
 
   /**
    * Fetch all neighborhoods with proper error handling.
+   * @param {function(...*)=} callback
    */
   static fetchNeighborhoods(callback) {
     // Fetch all restaurants
@@ -125,6 +165,7 @@ export class DBHelper {
 
   /**
    * Fetch all cuisines with proper error handling.
+   * @param {function(...*)=} callback
    */
   static fetchCuisines(callback) {
     // Fetch all restaurants
@@ -143,6 +184,8 @@ export class DBHelper {
 
   /**
    * Restaurant page URL.
+   * @param {!Object<?,?>} restaurant
+   * @return {string}
    */
   static urlForRestaurant(restaurant) {
     return (`./restaurant.html?id=${restaurant.id}`);
@@ -150,22 +193,32 @@ export class DBHelper {
 
   /**
    * Restaurant image URL.
+   * @param {!Object<?,?>} restaurant
+   * @return {string}
    */
   static imageUrlForRestaurant(restaurant) {
     return (`/img/${restaurant.photograph}`);
   }
 
+  /**
+   * Restaurant image URL.
+   * @param {!Object<?,?>} restaurant
+   * @return {string}
+   */
   static imageUrlForRestaurantSmall(restaurant) {
     return (`/img_opt/${restaurant.photograph || restaurant.id}`);
   }
 
   /**
    * Map marker for a restaurant.
+   * @param {!Object<?,?>} restaurant
+   * @param {!google.maps.Map} map
+   * @return {!Object<?,?>}
    */
   static mapMarkerForRestaurant(restaurant, map) {
     const marker = new google.maps.Marker({
-      position: restaurant.latlng,
-      title: restaurant.name,
+      position: restaurant['latlng'],
+      title: restaurant['name'],
       url: DBHelper.urlForRestaurant(restaurant),
       map: map,
       animation: google.maps.Animation.DROP}
