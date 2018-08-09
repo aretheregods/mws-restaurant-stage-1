@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <meta charset="UTF-8"> 
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2A2B34"></meta>
   <link rel="stylesheet" src="//normalize-css.googlecode.com/svn/trunk/normalize.css" />
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="build/styles.min.css">
   <title>Restaurant Reviews</title>
 </head>
 
@@ -16,26 +17,26 @@
     </nav>
   </header>
 
-  <main id="maincontent">
-    <section id="map-container" aria-label="map" role="application">
+  <main id="maincontent" class="regular">
+    <section id="map-container" class="regular" aria-label="map" role="application">
       <div id="map"></div>
     </section>
     <!-- Added an id here for styling purposes -->
-    <section id="restaurants-container">
+    <section id="restaurants-container" class="regular">
       <div class="filter-options">
         <h2>Filter Results</h2>
         <!-- Used divs here for styling purposes -->
         <!-- Added labels for select menus -->
-        <div id="filters">    
+        <div id="filters">
           <div class="selector">
             <label for="neighborhoods-select">Choose Neighborhood</label>
-            <select id="neighborhoods-select" name="neighborhoods" onchange="updateRestaurants()">
+            <select id="neighborhoods-select" name="neighborhoods">
               <option value="all" selected>All Neighborhoods</option>
             </select>
           </div>
-          <div class="selector">    
+          <div class="selector">
             <label for="cuisines-select">Choose Cuisine</label>
-            <select id="cuisines-select" name="cuisines" onchange="updateRestaurants()">
+            <select id="cuisines-select" name="cuisines">
               <option value="all">All Cuisines</option>
             </select>
           </div>
@@ -43,6 +44,37 @@
       </div>
       <ul id="restaurants-list"></ul>
     </section>
+    <!-- floating action button to open and close map -->
+    <!-- with inline SVG map icon -->
+    <button id="map-fab" role="button" aria-label="toggle map">
+      <svg version="1.1" id="map-marker" class="show" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="512px" height="512px" viewBox="0 0 512 512" xml:space="preserve">
+        <g>
+          <path d="M256,0C167.641,0,96,71.625,96,160c0,24.75,5.625,48.219,15.672,69.125C112.234,230.313,256,512,256,512l142.594-279.375
+            C409.719,210.844,416,186.156,416,160C416,71.625,344.375,0,256,0z M256,256c-53.016,0-96-43-96-96s42.984-96,96-96
+            c53,0,96,43,96,96S309,256,256,256z"/>
+        </g>
+      </svg>
+      <svg version="1.1"
+        id="close-map" class="hide"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        x="60px" y="60px" width="60px" height="60px"
+        viewBox="0 0 60 60" xml:space="preserve">
+        <g>
+          <line x1="1" y1="59" 
+                x2="59" y2="1" 
+                stroke="blue" 
+                stroke-width="5"/>
+          <line x1="1" y1="1" 
+                x2="59" y2="59" 
+                stroke="blue" 
+                stroke-width="5"/>
+        </g>
+      </svg>
+    </button>
+    <footer id="footer" class="regular">
+      Copyright (c) 2017 <a href="/"><strong>Restaurant Reviews</strong></a> All Rights Reserved.
+    </footer>
   </main>
 
   <!-- Added script to initialize service worker -->
@@ -59,14 +91,8 @@
       });
     }
   </script>
-  <script type="application/javascript" charset="utf-8" src="js/dbhelper.js"></script>
-  <script type="application/javascript" charset="utf-8" src="js/main.js"></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAMJWGaXwQe9GEqdDXmJ9vd8KPHCKf2k7k&libraries=places&callback=initMap"></script>
-
-
-  <footer id="footer">
-    Copyright (c) 2017 <a href="/"><strong>Restaurant Reviews</strong></a> All Rights Reserved.
-  </footer>
+  <!-- Main app files -->
+  <script defer type="application/javascript" src="build/main.min.js"></script>
 
 </body>
 
