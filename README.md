@@ -2,7 +2,13 @@
 ---
 #### _Three Stage Course Material Project - Restaurant Reviews_
 
-## Project Solution
+There are many changes here, mostly to data storage/fetching and app loading
+
+There's also new map functionality to aid with faster page loading
+
+I've also added image lazy loading -- although I might remove it later
+
+## Project 2 Solution
 
 Download repo
 
