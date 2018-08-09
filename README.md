@@ -13,10 +13,34 @@ Run 'npm i'
 Run 'npm run imgopt'
 
 
-Run 'python -m http.server' or whatever other basic web server
+#### For basic unoptimized code
 
 
+Run 'npm start' 
 
-Open localhost:#### in the browser (Whatever number your server uses)
+
+#### Or for optimized code
+
+
+Run 'npm run start:production'
+
+
+#### To build code without running
+(For whatever reason)
+
+
+Run 'npm run build'
+
+
+## For Server Stuff
+
+
+Open a new terminal window in the app directory
+
+
+Run 'npm run start:server'
+
+
+Open localhost:8080 in the browser
 
 
