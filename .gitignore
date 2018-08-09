@@ -1,4 +1,5 @@
 node_modules/
 img_opt/
+build/
 sw.js
 webpack.config.js
