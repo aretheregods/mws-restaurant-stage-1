@@ -1,5 +1,7 @@
 /**
  * Helper class for lazy loading offscreen images
+ * Adapted/borrowed from that one guy - Paul Lewis (?) -
+ * @google
  */
 export class LazyLoadHelper {
 
