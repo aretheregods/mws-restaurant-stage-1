@@ -26,6 +26,7 @@ const pageWithMap = head.querySelector('script');
 // [END] declare map state verification data
 
 // [START] page event listeners
+// Get data from device store or internet and init page data store/UI
 window.addEventListener("load", function(event) {
   restaurantStore = Object.assign({}, restaurantStore, {
     loading: true
@@ -59,6 +60,7 @@ window.addEventListener("load", function(event) {
 })
 
 // [START] Declare any custom events
+// Dispatch this event when the map button is clicked
 if (typeof window.CustomEvent === 'function') {
   var mapEvent = new CustomEvent('mapRender', {
     bubbles: true
@@ -81,7 +83,7 @@ window.addEventListener('resize', (ev) => {
 
 // When mapRender event is heard, toggle the map on/off
 document.addEventListener('mapRender', (e) => {
-  toggleMap(restaurantStore.mapVisible);
+  toggleMap();
 })
 
 // Reset store then dispatch the mapRender event on click
@@ -215,7 +217,10 @@ const fillBreadcrumb = (restaurant=restaurantStore.restaurant) => {
   breadcrumb.appendChild(li);
 }
 
-// Set/Remove classes and load API w/regard to map state
+/**
+ * Set/Remove classes and load API w/regard to map state
+ * @param {boolean} mapShow 
+ */
 const toggleMap = (mapShow = restaurantStore.mapVisible) => {
   if (mapShow) {
     mapContainer.classList.replace('regular', 'mapped')
@@ -229,7 +234,10 @@ const toggleMap = (mapShow = restaurantStore.mapVisible) => {
   }
 }
 
-// Put map in head of document if it's not already there
+/** 
+ * Put map in head of document if it's not already there
+ * @param {boolean} apiLoaded
+ */
 const putMapInHead = (apiLoaded = restaurantStore.mapAPILoaded) => {
   if (!apiLoaded) {
     mapJS = document.createElement('script');
@@ -243,7 +251,9 @@ const putMapInHead = (apiLoaded = restaurantStore.mapAPILoaded) => {
   return;
 }
 
-// Fix map state in specific cases
+/** 
+ * Fix map state in specific cases 
+ */
 const fixMapStateMismatch = () => {
   if ((restaurantStore.mapVisible && pageWithMap) || !restaurantStore.mapVisible && !pageWithMap) {
     return;

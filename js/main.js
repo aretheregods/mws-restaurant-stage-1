@@ -137,7 +137,6 @@ mapFAB.addEventListener('click', (e) => {
 /**
  * Set neighborhoods HTML.
  * @param {!Array<string>} neighborhoods
- * @suppress {missingProperties}
  */
 const fillNeighborhoodsHTML = (neighborhoods = restaurantsStore.neighborhoods) => {
   neighborhoods().forEach(neighborhood => {
@@ -151,7 +150,6 @@ const fillNeighborhoodsHTML = (neighborhoods = restaurantsStore.neighborhoods) =
 /**
  * Set cuisines HTML.
  * @param {!Array<string>} cuisines
- * @suppress {missingProperties}
  */
 const fillCuisinesHTML = (cuisines = restaurantsStore.cuisines) => {
   cuisines().forEach(cuisine => {
@@ -181,7 +179,6 @@ window.initMap = () => {
 /**
  * Create all restaurants HTML and add them to the webpage.
  * @param {!Array<Object>} restaurants
- * @suppress {missingProperties}
  */
 const fillRestaurantsHTML = (restaurants = restaurantsStore.currentRestaurants) => {
   restaurantsList.innerHTML = '';
@@ -194,7 +191,6 @@ const fillRestaurantsHTML = (restaurants = restaurantsStore.currentRestaurants) 
 /**
  * Create restaurant HTML.
  * @param {!{name, neighborhood, address}} restaurant - A single restaurant Object
- * @suppress {missingProperties}
  * @return {*}
  */
 const createRestaurantHTML = (restaurant) => {
@@ -229,12 +225,20 @@ const createRestaurantHTML = (restaurant) => {
   return li
 }
 
+/**
+ * Call correct map handler based on current map state
+ * @param {boolean} mapped
+ * @return {function ()}
+ */
 const toggleMap = (mapped = restaurantsStore.mapVisible) => {
   return mapped ?
     fillMapHTML() :
     emptyMapHTML() ;
 }
 
+/**
+ * Add/Remove mapped state classes according to current window dimensions
+ */
 const fillMapHTML = () => {
   if (window.matchMedia( "(min-width: 730px)" ).matches) {
     restaurantsContainer.classList.replace('regular', 'mapped');
@@ -252,6 +256,11 @@ const fillMapHTML = () => {
   loadMapAPI();
 }
 
+/**
+ * Put map API in head of document if it's not already there
+ * Otherwise just return
+ * @param {boolean} apiLoaded 
+ */
 const loadMapAPI = (apiLoaded = restaurantsStore.mapAPILoaded) => {
   if (!apiLoaded) {
     mapJS = document.createElement('script');
@@ -265,6 +274,9 @@ const loadMapAPI = (apiLoaded = restaurantsStore.mapAPILoaded) => {
   return;
 }
 
+/**
+ * Toggle classes for empty unmapped state
+ */
 const emptyMapHTML = () => {
   if (window.matchMedia( "(min-width: 730px)" ).matches) {
     restaurantsContainer.classList.replace('mapped', 'regular');
