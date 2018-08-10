@@ -297,7 +297,7 @@ const emptyMapHTML = () => {
  * @param {!Array<Object>} restaurants
  */
 const addMarkersToMap = (restaurants = restaurantsStore.currentRestaurants) => {
-  markers.length && markers.forEach(m => m.setMap(null));;
+  markers.length && markers.forEach(m => m.setMap(null));
   markers = restaurants().map(restaurant => {
     // Add marker to the map
     const marker = DBHelper.mapMarkerForRestaurant(restaurant, map);
