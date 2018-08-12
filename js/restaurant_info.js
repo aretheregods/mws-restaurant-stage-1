@@ -66,12 +66,8 @@ document.addEventListener("DOMContentLoaded", function(event) {
     .then(res => putRestaurantInPageTitle(res.restaurant.name))
     .catch(e => console.log('Some error:', e))
     .then(_ => document.dispatchEvent(reviewsRender))
-    .then(_ => media1024 && putMapInHead());
-    // .then(_ => requestIdleCallback(() => getReviewsObserver(reviewsContainer)));
-})
-
-window.addEventListener('load', e => {
-  requestIdleCallback(() => getReviewsObserver(reviewsContainer))
+    .then(_ => media1024 && putMapInHead())
+    .then(_ => requestIdleCallback(() => getReviewsObserver(reviewsContainer)));
 })
 
 // [START] Declare any custom events
