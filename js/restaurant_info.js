@@ -1,14 +1,21 @@
 import { DBHelper } from './dbhelper.js';
+import { putReviewsInIDB } from './idbhelper.js';
 
 // [START] page data store
 var restaurantStore = {
   restaurant: {},
-  reviews: () => restaurantStore.restaurant.reviews || [],
+  reviews: [],
+  fetchingRestaurant: false,
+  fetchingReviews: false,
   mapVisible: false,
   mapAPILoaded: false
 }
-let restaurant;
-let map;
+var restaurant;
+var map;
+var observerConfig = {
+  rootMargin: '50px 0px',
+  threshold: 1
+}
 // [END] page data store
 
 // [START] get page elements
@@ -17,6 +24,7 @@ const mapContainer = document.getElementById('map-container');
 const mapFab = document.getElementById('map-fab')
 const mapMarker = document.getElementById('map-marker');
 const svgPicture = document.getElementById('svg-picture');
+var reviewsContainer;
 var mapJS;
 // [END] get page
 
@@ -27,7 +35,7 @@ const pageWithMap = head.querySelector('script');
 
 // [START] page event listeners
 // Get data from device store or internet and init page data store/UI
-window.addEventListener("load", function(event) {
+document.addEventListener("DOMContentLoaded", function(event) {
   restaurantStore = Object.assign({}, restaurantStore, {
     loading: true
   })
@@ -47,16 +55,23 @@ window.addEventListener("load", function(event) {
         restaurant: res,
         loading: false
       });
-      return restaurantStore;
+      return res;
     })
     .catch(e => console.log('Some error:', e))
     .then(res => {
       fillBreadcrumb();
       fillRestaurantHTML();
-      return res;
+      return restaurantStore;
     })
+    .then(res => putRestaurantInPageTitle(res.restaurant.name))
     .catch(e => console.log('Some error:', e))
-    .then(res => media1024 && putMapInHead());
+    .then(_ => document.dispatchEvent(reviewsRender))
+    .then(_ => media1024 && putMapInHead());
+    // .then(_ => requestIdleCallback(() => getReviewsObserver(reviewsContainer)));
+})
+
+window.addEventListener('load', e => {
+  requestIdleCallback(() => getReviewsObserver(reviewsContainer))
 })
 
 // [START] Declare any custom events
@@ -64,7 +79,10 @@ window.addEventListener("load", function(event) {
 if (typeof window.CustomEvent === 'function') {
   var mapEvent = new CustomEvent('mapRender', {
     bubbles: true
-  })
+  });
+  var reviewsRender = new CustomEvent('reviewsRender', {
+    bubbles: true
+  });
 }
 // [END] Declare any custom events
 
@@ -84,6 +102,10 @@ window.addEventListener('resize', (ev) => {
 // When mapRender event is heard, toggle the map on/off
 document.addEventListener('mapRender', (e) => {
   toggleMap();
+})
+
+document.addEventListener('reviewsRender', (e) => {
+  fillReviewsHTML();
 })
 
 // Reset store then dispatch the mapRender event on click
@@ -132,8 +154,6 @@ const fillRestaurantHTML = (restaurant = restaurantStore.restaurant) => {
   if (restaurant.operating_hours) {
     fillRestaurantHoursHTML();
   }
-  // fill reviews
-  fillReviewsHTML();
 }
 
 /**
@@ -162,22 +182,27 @@ const fillRestaurantHoursHTML = (operatingHours = restaurantStore.restaurant.ope
  * @param {!Array<{name, date, rating, comments}>} reviews - An Array of review Objects
  */
 const fillReviewsHTML = (reviews = restaurantStore.reviews) => {
-  const container = document.getElementById('reviews-container');
+  let noReviews;
+  reviewsContainer = document.getElementById('reviews-container');
   const title = document.createElement('h2');
   title.innerHTML = 'Reviews';
-  container.appendChild(title);
+  !reviews.length && reviewsContainer.appendChild(title);
 
-  if (!reviews().length) {
-    const noReviews = document.createElement('p');
+  if (!reviews.length) {
+    noReviews = document.createElement('p');
     noReviews.innerHTML = 'No reviews yet!';
-    container.appendChild(noReviews);
+    reviewsContainer.appendChild(noReviews);
     return;
+  } else if (reviews.length) {
+    noReviews = reviewsContainer.getElementsByTagName('p')[0];
+    reviewsContainer.removeChild(noReviews);
   }
+
   const ul = document.getElementById('reviews-list');
-  reviews().forEach(review => {
+  reviews.forEach(review => {
     ul.appendChild(createReviewHTML(review));
   });
-  container.appendChild(ul);
+  reviewsContainer.appendChild(ul);
 }
 
 /**
@@ -192,7 +217,8 @@ const createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  date.innerHTML = review.date;
+  const reviewDate = new Date(review.updatedAt)
+  date.innerHTML = `${reviewDate.toLocaleDateString()} at ${reviewDate.toLocaleTimeString()}`;
   li.appendChild(date);
 
   const rating = document.createElement('p');
@@ -219,7 +245,7 @@ const fillBreadcrumb = (restaurant=restaurantStore.restaurant) => {
 
 /**
  * Set/Remove classes and load API w/regard to map state
- * @param {boolean} mapShow 
+ * @param {boolean} mapShow
  */
 const toggleMap = (mapShow = restaurantStore.mapVisible) => {
   if (mapShow) {
@@ -234,7 +260,7 @@ const toggleMap = (mapShow = restaurantStore.mapVisible) => {
   }
 }
 
-/** 
+/**
  * Put map in head of document if it's not already there
  * @param {boolean} apiLoaded
  */
@@ -251,8 +277,42 @@ const putMapInHead = (apiLoaded = restaurantStore.mapAPILoaded) => {
   return;
 }
 
-/** 
- * Fix map state in specific cases 
+const getReviewsObserver = () => {
+  reviewsContainer = document.getElementById('reviews-container');
+  let observer = new IntersectionObserver(watchReviews, observerConfig);
+  observer.observe(reviewsContainer);
+}
+
+const watchReviews = (entry, observer) => {
+  if (entry.intersectionRatio < observerConfig.threshold) {
+    return;
+  }
+  observer.unobserve(reviewsContainer);
+  restaurantStore = Object.assign({}, restaurantStore, {
+    fetchingReviews: true
+  })
+  DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
+    .then(res => {
+      let r = res.json();
+      return r;
+    })
+    .catch(e => console.error(e))
+    .then(res => {
+      restaurantStore = Object.assign({}, restaurantStore, {
+        reviews: res,
+        fetchingReviews: false
+      });
+      reviewsContainer.dispatchEvent(reviewsRender);
+    })
+    .catch(e => console.error(e))
+    .then(_ => observer.disconnect())
+    .catch(e => console.error(e))
+    .then(_ => requestIdleCallback(() => putReviewsInIDB(restaurantStore.reviews)))
+    .catch(e => console.error(e));
+}
+
+/**
+ * Fix map state in specific cases
  */
 const fixMapStateMismatch = () => {
   if ((restaurantStore.mapVisible && pageWithMap) || !restaurantStore.mapVisible && !pageWithMap) {
@@ -263,8 +323,19 @@ const fixMapStateMismatch = () => {
   } else if (!restaurantStore.mapVisible && pageWithMap) {
     mapContainer.className = 'regular';
   }
-} 
+}
 
+const putRestaurantInPageTitle = (name = restaurantStore.restaurant.name) => {
+  var oldTitle = head.getElementsByTagName('title')[0];
+  var newTitle = document.createElement('title');
+  newTitle.textContent = `Information and reviews for ${name}`;
+  var metaDescription = document.createElement('meta');
+  metaDescription.name = 'description';
+  metaDescription.content = `Information and reviews for ${restaurantStore.restaurant.name}`;
+
+  head.replaceChild(newTitle, oldTitle);
+  head.appendChild(metaDescription);
+}
 /**
  * Get a parameter by name from page URL.
  * @param {!string} name
@@ -283,3 +354,24 @@ const getParameterByName = (name, url) => {
     return '';
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
+
+/**
+ * Polyfill for if user has a crappy browser
+ */
+window.requestIdleCallback = window.requestIdleCallback ||
+  function (cb) {
+    return setTimeout(function () {
+      var start = Date.now();
+      cb({
+        didTimeout: false,
+        timeRemaining: function () {
+          return Math.max(0, 50 - (Date.now() - start));
+        }
+      });
+    }, 1);
+  }
+
+window.cancelIdleCallback = window.cancelIdleCallback ||
+  function (id) {
+    clearTimeout(id);
+  }
