@@ -30,7 +30,7 @@ var mapJS;
 
 // [START] declare map state verification data
 const media1024 = window.matchMedia('(min-width: 1024px)').matches;
-const pageWithMap = head.querySelector('script');
+const pageWithMap = head.getElementsByTagName('script')[0];
 // [END] declare map state verification data
 
 // [START] page event listeners
@@ -41,14 +41,12 @@ document.addEventListener("DOMContentLoaded", function(event) {
   })
   const id = getParameterByName('id');
   DBHelper.initRestaurantDataStore(id).then(res => {
-    let restaurants;
-    if (res.json) {
-      restaurants = res.json();
-    } else {
-      restaurants = res;
-    }
-    return restaurants;
-  })
+      let restaurants;
+      res.json ?
+        restaurants = res.json() :
+        restaurants = res;
+      return restaurants;
+    })
     .catch(e => console.log('Some error:', e))
     .then(res => {
       restaurantStore = Object.assign({}, restaurantStore, {
@@ -86,6 +84,7 @@ if (typeof window.CustomEvent === 'function') {
 window.addEventListener('resize', (ev) => {
   if (media1024) { mapFab.className = 'large-screen'; }
   if (media1024 && !pageWithMap) {
+    mapContainer.className = 'regular';
     putMapInHead();
   } else if (!media1024 && (
     (restaurantStore.mapVisible && !pageWithMap) ||
@@ -93,7 +92,7 @@ window.addEventListener('resize', (ev) => {
   )) {
     fixMapStateMismatch();
   }
-})
+});
 
 // When mapRender event is heard, toggle the map on/off
 document.addEventListener('mapRender', (e) => {
