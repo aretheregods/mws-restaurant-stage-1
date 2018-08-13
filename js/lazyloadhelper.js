@@ -29,7 +29,7 @@ export class LazyLoadHelper {
     constructor() {
         const images = document.getElementById("restaurants-list").querySelectorAll('.restaurant-img');
         const config = {
-            rootMargin: "50px 0px",
+            rootMargin: "0px",
             threshold: LazyLoadHelper.THRESHOLD
         };
 
