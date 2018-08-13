@@ -145,10 +145,10 @@ nav h1 a {
   border: 1px solid rgba(0, 0, 255, 0.33);
 }
 #map-fab.regular {
-  display: initial;
+  visibility: visible
 }
 #map-fab.large-screen {
-  display: none;
+  visibility: hidden;
 }
 #svg-picture {
   position: relative;
@@ -272,6 +272,9 @@ nav h1 a {
     z-index: 1;
   }
   #map-container.regular {
+    visibility: visible;
+  }
+  #map-container.mapped {
     visibility: visible;
   }
   #map-fab {
