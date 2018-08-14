@@ -38,6 +38,7 @@ article, aside, canvas, details, figcaption, figure, footer, header, hgroup, men
   height: 1.5em;
   width: 1.5em;
   fill: #fff;
+  margin-top: 5px;
 }
 /* ====================== Navigation ====================== */
 nav {
@@ -209,7 +210,7 @@ nav h1 a {
 }
 #reviews-container {
   padding: 30px 40px 80px;
-  min-height: 100vh;
+  min-height: 120vh;
 }
 #reviews-container h2 {
   color: #f58500;
@@ -218,6 +219,56 @@ nav h1 a {
   letter-spacing: -1px;
   padding-bottom: 1pt;
 }
+/* [START] star rating styles */
+fieldset {
+  width: max-content;
+  border: none;
+}
+fieldset div {
+  float: left;
+}
+fieldset div:not(:checked) > input {
+  position:absolute;
+  clip:rect(0,0,0,0);
+}
+fieldset div:not(:checked) > label {
+  float:right;
+  width:1em;
+  padding: 0px;
+  overflow:hidden;
+  white-space:nowrap;
+  cursor:pointer;
+  font-size:200%;
+  line-height:1.2;
+  color:#ddd;
+  text-shadow:1px 1px #bbb, 2px 2px #666, .1em .1em .2em rgba(0,0,0,.5);
+}
+fieldset div:not(:checked) > label:before {
+  content: '\1F374';
+}
+fieldset div > input:checked ~ label {
+  color: gold;
+  text-shadow:1px 1px #c60, 2px 2px #940, .1em .1em .2em rgba(0,0,0,.5);
+}
+fieldset div:not(:checked) > label:hover,
+fieldset div:not(:checked) > label:hover ~ label {
+  color: palegoldenrod;
+  text-shadow:1px 1px goldenrod, 2px 2px #B57340, .1em .1em .2em rgba(0,0,0,.5);
+}
+fieldset div > input:checked + label:hover,
+fieldset div > input:checked + label:hover ~ label,
+fieldset div > input:checked ~ label:hover,
+fieldset div > input:checked ~ label:hover ~ label,
+fieldset div > label:hover ~ input:checked ~ label {
+  color: #ea0;
+  text-shadow:1px 1px goldenrod, 2px 2px #B57340, .1em .1em .2em rgba(0,0,0,.5);
+}
+fieldset div > label:active {
+  position:relative;
+  top:2px;
+  left:2px;
+}
+/* [END] star rating styles */
 #reviews-list {
   margin: 0;
   padding: 0;

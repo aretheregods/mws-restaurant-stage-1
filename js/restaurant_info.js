@@ -103,6 +103,11 @@ document.addEventListener('reviewsRender', (e) => {
   fillReviewsHTML();
 })
 
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  console.log(getFormData(e.target.id));
+})
+
 // Reset store then dispatch the mapRender event on click
 mapFab.addEventListener('click', (e) => {
   restaurantStore = Object.assign({}, restaurantStore, {
@@ -177,13 +182,17 @@ const fillRestaurantHoursHTML = (operatingHours = restaurantStore.restaurant.ope
  * @param {!Array<{name, date, rating, comments}>} reviews - An Array of review Objects
  */
 const fillReviewsHTML = (reviews = restaurantStore.reviews) => {
-  let noReviews;
+  var noReviews;
   reviewsContainer = document.getElementById('reviews-container');
   const title = document.createElement('h2');
+  const newReview = makeEditableReviewHTML();
+  const hr = document.createElement('hr');
   title.innerHTML = 'Reviews';
-  !reviews.length && reviewsContainer.appendChild(title);
 
   if (!reviews.length) {
+    reviewsContainer.appendChild(title);
+    reviewsContainer.appendChild(newReview);
+    reviewsContainer.appendChild(hr);
     noReviews = document.createElement('p');
     noReviews.innerHTML = 'No reviews yet!';
     reviewsContainer.appendChild(noReviews);
@@ -197,6 +206,7 @@ const fillReviewsHTML = (reviews = restaurantStore.reviews) => {
   reviews.forEach(review => {
     ul.appendChild(createReviewHTML(review));
   });
+  
   reviewsContainer.appendChild(ul);
 }
 
@@ -225,6 +235,61 @@ const createReviewHTML = (review) => {
   li.appendChild(comments);
 
   return li;
+}
+
+const makeEditableReviewHTML = (currentReviewData = {
+  currentFormIndex: 0,
+  nameInputValue: '',
+  ratingInputValue: 0,
+  commentTextareaValue: ''
+}) => {
+  const form = document.createElement('form');
+  const formTitle = document.createElement('h3');
+  form.method = 'POST';
+  form.id = currentReviewData.currentFormIndex ?
+    `comment${currentReviewData.currentFormIndex}` :
+    'new-comment';
+
+  formTitle.textContent = 'Leave a Review';
+  
+  const nameInput = document.createRange().createContextualFragment(`
+  <div>
+    <label for="reviewer-name">Name</label>
+    <input type="text" name="name" id="reviewer-name" value="${currentReviewData.nameInputValue || ''}">
+  </div>`)
+
+  const ratingInput = document.createRange().createContextualFragment(`
+  <fieldset>
+    <legend>Rating</legend>
+    <div>
+      ${ratingInputHTML()}
+    </div>
+  </fieldset>`);
+
+  const commentTextarea = document.createRange().createContextualFragment(`
+  <div>
+    <label for="comment">Comment</label>
+    <textarea name="comments" id="comment" value="${currentReviewData.ratingInputValue}"></textarea>
+  </div>`);
+
+  const submitReview = document.createRange().createContextualFragment(`
+  <div>
+    <button type="submit" id="submit-comment">Submit</button>
+  </div>`);
+
+  [formTitle, nameInput, ratingInput, commentTextarea, submitReview]
+    .forEach(element => form.appendChild(element));
+
+  return form;
+}
+
+const ratingInputHTML = () => {
+  const radios = [[1, 'Awful'], [2, 'Not Tasty'], [3, 'Edible'], [4, 'Tasty'], [5, 'Delicious']].map(n => `
+  <input type="radio" id="star${n[0]}" name="rating" value="${n[0]}">
+  <label for="star${n[0]}" title="${n[1]}">${n[0]} ${n[0] > 1 ? 'stars' : 'star'}</label>
+  `);
+
+  return radios.reduceRight((f, n) => f + n, '');
 }
 
 /**
@@ -272,6 +337,13 @@ const putMapInHead = (apiLoaded = restaurantStore.mapAPILoaded) => {
   return;
 }
 
+const getFormData = (id) => {
+  const currentForm = document.getElementById(id);
+  const formObject = new FormData(currentForm);
+  formObject.append('restaurant_id', restaurantStore.restaurant.id);
+  return formObject;
+}
+
 const getReviewsObserver = () => {
   reviewsContainer = document.getElementById('reviews-container');
   let observer = new IntersectionObserver(watchReviews, observerConfig);
@@ -286,7 +358,7 @@ const watchReviews = (entry, observer) => {
   restaurantStore = Object.assign({}, restaurantStore, {
     fetchingReviews: true
   })
-  DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
+  return DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
     .then(res => {
       let r = res.json();
       return r;
@@ -308,6 +380,8 @@ const watchReviews = (entry, observer) => {
 
 /**
  * Fix map state in specific cases
+ * Doesn't work on iPad orientationChange
+ * I need to rethink how to accomplish that
  */
 const fixMapStateMismatch = () => {
   if ((restaurantStore.mapVisible && pageWithMap) || !restaurantStore.mapVisible && !pageWithMap) {
@@ -320,16 +394,21 @@ const fixMapStateMismatch = () => {
   }
 }
 
+/**
+ * Adds restaurant specific title in tab & meta description
+ * @param {string} name 
+ */
 const putRestaurantInPageTitle = (name = restaurantStore.restaurant.name) => {
-  var oldTitle = head.getElementsByTagName('title')[0];
-  var newTitle = document.createElement('title');
+  const oldTitle = head.getElementsByTagName('title')[0];
+  const newTitle = document.createElement('title');
   newTitle.textContent = `Information and reviews for ${name}`;
-  var metaDescription = document.createElement('meta');
+  const initialMetaForDescription = head.getElementsByTagName('meta')[2];
+  const metaDescription = document.createElement('meta');
   metaDescription.name = 'description';
   metaDescription.content = `Information and reviews for ${restaurantStore.restaurant.name}`;
 
   head.replaceChild(newTitle, oldTitle);
-  head.appendChild(metaDescription);
+  head.replaceChild(metaDescription, initialMetaForDescription);
 }
 /**
  * Get a parameter by name from page URL.
