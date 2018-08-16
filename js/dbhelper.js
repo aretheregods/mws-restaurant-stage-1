@@ -4,7 +4,8 @@
 import {
   fetchRestaurantsFromIDB,
   restaurantsInIDB,
-  fetchRestaurantFromIDB
+  fetchRestaurantFromIDB,
+  fetchReviewsFromIDB
 } from './idbhelper.js';
 
 export class DBHelper {
@@ -17,6 +18,18 @@ export class DBHelper {
   static get DATABASE_URL() {
     const port = 1337 // Change this to your server port
     return `http://localhost:${port}/`;
+  }
+
+  static get REQUEST_TIMEOUT_VALUE() {
+    return 6;
+  }
+
+  static postEvent(name = 'connected', data = { message: 'Your message was sent!' }) {
+    const connectionEvent = new CustomEvent(name, {
+      bubbles: true,
+      detail: data
+    });
+    window.dispatchEvent(connectionEvent);
   }
 
   /**
@@ -32,7 +45,7 @@ export class DBHelper {
 
   /**
    * Fetches restaurant page data somehow and returns it in a promise
-   * @paramm {string} id
+   * @param {string} id
    */
   static initRestaurantDataStore(id) {
     return restaurantsInIDB().then(val => {
@@ -40,6 +53,27 @@ export class DBHelper {
         fetchRestaurantFromIDB(id) :
         this.fetchRestaurantRemote(id);
     })
+  }
+
+  static backoffPost(backoffParams = { tries: 0, timeoutLength: 0 }, postFn, postFnArg) {
+    var { tries, timeoutLength } = backoffParams;
+    function pause(timeoutLength) {
+      return new Promise(function (resolve) {
+        return setTimeout(resolve, timeoutLength);
+      });
+    }
+    return postFn(postFnArg)
+      .then(res => {
+        return this.postEvent('postSuccess', { message: 'We post was a success! Hooray!' });
+      })
+      .catch(err => {
+        return tries > 1 ?
+          pause(timeoutLength).then(() => this.backoffPost({
+            tries: tries - 1,
+            timeoutLength: timeoutLength * 2
+          }, postFn, ...postFnArgs)) :
+          Promise.reject;
+      });
   }
 
   /**
@@ -57,21 +91,44 @@ export class DBHelper {
     return this.fetchRemote(`${this.DATABASE_URL}restaurants/${id}`);
   }
 
+  static fetchReviewsRemote(id) {
+    return this.fetchRemote(`${this.DATABASE_URL}reviews/?restaurant_id=${id}`);
+  }
+
+  static postReviewRemote(review) {
+    return this.fetchRemote(`${this.DATABASE_URL}reviews`, 'POST', review, this.REQUEST_TIMEOUT_VALUE);
+  }
+
   /**
    * Some browsers are weird with fetch
-   * So, this is a really simple polyfill
-   * Fetch all restaurants from the Internet
+   * so this is a really simple polyfill
+   * with the option for timing out the request
    */
-  static fetchRemote(url, method = 'get', body) {
+  static fetchRemote(url=this.DATABASE_URL, method = 'GET', body, timeout=0) {
     return new Promise(function(resolve, reject) {
-      var xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest();
+      const requestTimeout = timeout && setTimeout(function() {
+        xhr.abort();
+        this.postEvent('connectionTimedOut', {
+          message: "Your connection seems bad.\nWe saved your message offline.\nWe're retrying...",
+          postData: {
+            url: url,
+            data: body && this.objFromFormData(formData)
+          }
+        }, timeout * 1000);
+      });
       xhr.onerror = reject;
       xhr.onload = function() {
-        return resolve({
-          json: function() {
-            return Promise.resolve(xhr.responseText).then(JSON.parse);
-          }
-        })
+        if (this.status >= 200 && this.status < 300) {
+          requestTimeout && clearTimeout(requestTimeout);
+          return resolve({
+            json: function() {
+              return Promise.resolve(xhr.responseText).then(JSON.parse);
+            }
+          })
+        } else {
+          reject;
+        }
       }
       xhr.open(method, url);
       body ? xhr.send(body) : xhr.send();
@@ -122,6 +179,14 @@ export class DBHelper {
       animation: google.maps.Animation.DROP}
     );
     return marker;
+  }
+
+  static objFromFormData(formData) {
+    let obj = {};
+    for (let [k, v] of formData) {
+      obj[k] = v;
+    }
+    return obj;
   }
 
 }

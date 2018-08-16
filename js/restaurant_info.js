@@ -1,5 +1,5 @@
 import { DBHelper } from './dbhelper.js';
-import { putReviewsInIDB } from './idbhelper.js';
+import { putReviewsInIDB, putReviewInIDB } from './idbhelper.js';
 
 // [START] page data store
 var restaurantStore = {
@@ -59,9 +59,9 @@ document.addEventListener("DOMContentLoaded", function(event) {
     .then(res => {
       fillBreadcrumb();
       fillRestaurantHTML();
-      return restaurantStore;
+      return res;
     })
-    .then(res => putRestaurantInPageTitle(res.restaurant.name))
+    .then(res => putRestaurantInPageTitle(res.name))
     .catch(e => console.log('Some error:', e))
     .then(_ => document.dispatchEvent(reviewsRender))
     .then(_ => media1024 && putMapInHead())
@@ -81,7 +81,7 @@ if (typeof window.CustomEvent === 'function') {
 // [END] Declare any custom events
 
 // Correct the mapState when turning iPad or similar devices
-window.addEventListener('resize', (ev) => {
+window.addEventListener('resize', (_) => {
   if (media1024) { mapFab.className = 'large-screen'; }
   if (media1024 && !pageWithMap) {
     mapContainer.className = 'regular';
@@ -95,21 +95,22 @@ window.addEventListener('resize', (ev) => {
 });
 
 // When mapRender event is heard, toggle the map on/off
-document.addEventListener('mapRender', (e) => {
+document.addEventListener('mapRender', (_) => {
   toggleMap();
 })
 
-document.addEventListener('reviewsRender', (e) => {
+document.addEventListener('reviewsRender', (_) => {
   fillReviewsHTML();
 })
 
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  console.log(getFormData(e.target.id));
+  DBHelper.backoffPost({tries: 6, timeoutLength: 500}, DBHelper.postReviewRemote, getFormData(e.target.id))
+    .then(res => window.dispatchEvent(reviewsRender));
 })
 
 // Reset store then dispatch the mapRender event on click
-mapFab.addEventListener('click', (e) => {
+mapFab.addEventListener('click', (_) => {
   restaurantStore = Object.assign({}, restaurantStore, {
     mapVisible: !restaurantStore.mapVisible
   });
