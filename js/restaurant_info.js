@@ -105,7 +105,9 @@ document.addEventListener('reviewsRender', (_) => {
 
 document.addEventListener('submit', (e) => {
   e.preventDefault();
-  DBHelper.backoffPost({tries: 6, timeoutLength: 500}, DBHelper.postReviewRemote, getFormData(e.target.id))
+  const form = getFormData(e.target.id);
+  console.log(DBHelper.objFromFormData(form))
+  DBHelper.backoffPost({tries: 6, timeoutLength: 500}, DBHelper.postReviewRemote, form)
     .then(res => window.dispatchEvent(reviewsRender));
 })
 

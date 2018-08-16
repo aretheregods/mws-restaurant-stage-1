@@ -96,7 +96,7 @@ export class DBHelper {
   }
 
   static postReviewRemote(review) {
-    return this.fetchRemote(`${this.DATABASE_URL}reviews`, 'POST', review, this.REQUEST_TIMEOUT_VALUE);
+    return DBHelper.fetchRemote(`${DBHelper.DATABASE_URL}reviews/`, 'POST', review, DBHelper.REQUEST_TIMEOUT_VALUE);
   }
 
   /**
@@ -109,11 +109,11 @@ export class DBHelper {
       const xhr = new XMLHttpRequest();
       const requestTimeout = timeout && setTimeout(function() {
         xhr.abort();
-        this.postEvent('connectionTimedOut', {
+        DBHelper.postEvent('connectionTimedOut', {
           message: "Your connection seems bad.\nWe saved your message offline.\nWe're retrying...",
           postData: {
             url: url,
-            data: body && this.objFromFormData(formData)
+            data: body && DBHelper.objFromFormData(body)
           }
         }, timeout * 1000);
       });
