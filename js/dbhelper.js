@@ -64,14 +64,14 @@ export class DBHelper {
     }
     return postFn(postFnArg)
       .then(res => {
-        return this.postEvent('postSuccess', { message: 'We post was a success! Hooray!' });
+        DBHelper.postEvent('postSuccess', { message: 'We post was a success! Hooray!' });
       })
       .catch(err => {
         return tries > 1 ?
           pause(timeoutLength).then(() => this.backoffPost({
             tries: tries - 1,
             timeoutLength: timeoutLength * 2
-          }, postFn, ...postFnArgs)) :
+          }, postFn, postFnArgs)) :
           Promise.reject;
       });
   }

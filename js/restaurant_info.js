@@ -106,9 +106,30 @@ document.addEventListener('reviewsRender', (_) => {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   const form = getFormData(e.target.id);
-  console.log(DBHelper.objFromFormData(form))
-  DBHelper.backoffPost({tries: 6, timeoutLength: 500}, DBHelper.postReviewRemote, form)
-    .then(res => window.dispatchEvent(reviewsRender));
+  document.getElementById(e.target.id).reset();
+  DBHelper.backoffPost({ tries: 6, timeoutLength: 500 }, DBHelper.postReviewRemote, form);
+  requestIdleCallback(() => {
+    return DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
+      .then(res => {
+        return res.json();
+      })
+      .catch(e => {
+        console.log(e);
+      })
+      .then(res => {
+        restaurantStore = Object.assign({}, restaurantStore, {
+          reviews: res
+        });
+        return restaurantStore.reviews;
+      })
+      .then(res => requestIdleCallback(() => reRenderReviews()));
+  });
+})
+
+
+
+document.addEventListener('postSuccess', (e) => {
+  console.log('message:',e.data.message);
 })
 
 // Reset store then dispatch the mapRender event on click
@@ -180,6 +201,16 @@ const fillRestaurantHoursHTML = (operatingHours = restaurantStore.restaurant.ope
   }
 }
 
+const reRenderReviews = (reviews=restaurantStore.reviews) => {
+  reviewsContainer = document.getElementById('reviews-container');
+  const oldUl = reviewsContainer.getElementsByTagName('ul')[0];
+  const newUl = document.createElement('ul'); 
+  reviews.forEach(review => {
+    newUl.appendChild(createReviewHTML(review));
+  });
+  reviewsContainer.replaceChild(newUl, oldUl);
+}
+
 /**
  * Create all reviews HTML and add them to the webpage.
  * @param {!Array<{name, date, rating, comments}>} reviews - An Array of review Objects
@@ -202,7 +233,7 @@ const fillReviewsHTML = (reviews = restaurantStore.reviews) => {
     return;
   } else if (reviews.length) {
     noReviews = reviewsContainer.getElementsByTagName('p')[0];
-    reviewsContainer.removeChild(noReviews);
+    noReviews.innerHTML === 'No reviews yet!' && reviewsContainer.removeChild(noReviews);
   }
 
   const ul = document.getElementById('reviews-list');
