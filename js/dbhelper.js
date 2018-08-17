@@ -55,26 +55,7 @@ export class DBHelper {
     })
   }
 
-  static backoffPost(backoffParams = { tries: 0, timeoutLength: 0 }, postFn, postFnArg) {
-    var { tries, timeoutLength } = backoffParams;
-    function pause(timeoutLength) {
-      return new Promise(function (resolve) {
-        return setTimeout(resolve, timeoutLength);
-      });
-    }
-    return postFn(postFnArg)
-      .then(res => {
-        DBHelper.postEvent('postSuccess', { message: 'We post was a success! Hooray!' });
-      })
-      .catch(err => {
-        return tries > 1 ?
-          pause(timeoutLength).then(() => this.backoffPost({
-            tries: tries - 1,
-            timeoutLength: timeoutLength * 2
-          }, postFn, postFnArg)) :
-          Promise.reject;
-      });
-  }
+  
 
   /**
    * Fetch restaurant data from the internet
@@ -96,7 +77,7 @@ export class DBHelper {
   }
 
   static postReviewRemote(review) {
-    return DBHelper.fetchRemote(`${DBHelper.DATABASE_URL}reviews/`, 'POST', review, DBHelper.REQUEST_TIMEOUT_VALUE);
+    return this.fetchRemote(`${this.DATABASE_URL}reviews/`, 'POST', review);
   }
 
   /**
@@ -109,6 +90,7 @@ export class DBHelper {
       const xhr = new XMLHttpRequest();
       const requestTimeout = timeout && setTimeout(function() {
         xhr.abort();
+        reject;
         DBHelper.postEvent('connectionTimedOut', {
           message: "Your connection seems bad.\nWe saved your message offline.\nWe're retrying...",
           postData: {
