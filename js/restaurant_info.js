@@ -5,6 +5,7 @@ import { putReviewsInIDB, putReviewInIDB } from './idbhelper.js';
 var restaurantStore = {
   restaurant: {},
   reviews: [],
+  reviewsToPost: [],
   fetchingRestaurant: false,
   fetchingReviews: false,
   mapVisible: false,
@@ -107,29 +108,16 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   const form = getFormData(e.target.id);
   document.getElementById(e.target.id).reset();
-  DBHelper.backoffPost({ tries: 6, timeoutLength: 500 }, DBHelper.postReviewRemote, form);
-  requestIdleCallback(() => {
-    return DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
-      .then(res => {
-        return res.json();
-      })
-      .catch(e => {
-        console.log(e);
-      })
-      .then(res => {
-        restaurantStore = Object.assign({}, restaurantStore, {
-          reviews: res
-        });
-        return restaurantStore.reviews;
-      })
-      .then(res => requestIdleCallback(() => reRenderReviews()));
-  });
+  DBHelper.backoffPost({ tries: 6, timeoutLength: 500 }, DBHelper.postReviewRemote, form)
+    .then(res => {
+      addPostedReview(DBHelper.objFromFormData(form));
+    });
 })
 
 
 
-document.addEventListener('postSuccess', (e) => {
-  console.log('message:',e.data.message);
+window.addEventListener('postSuccess', (e) => {
+  console.log('message:', e.detail.message);
 })
 
 // Reset store then dispatch the mapRender event on click
@@ -201,14 +189,11 @@ const fillRestaurantHoursHTML = (operatingHours = restaurantStore.restaurant.ope
   }
 }
 
-const reRenderReviews = (reviews=restaurantStore.reviews) => {
+const addPostedReview = (review) => {
   reviewsContainer = document.getElementById('reviews-container');
-  const oldUl = reviewsContainer.getElementsByTagName('ul')[0];
-  const newUl = document.createElement('ul'); 
-  reviews.forEach(review => {
-    newUl.appendChild(createReviewHTML(review));
-  });
-  reviewsContainer.replaceChild(newUl, oldUl);
+  const ul = reviewsContainer.getElementsByTagName('ul')[0];
+  const newReview = createReviewHTML(review);
+  ul.appendChild(newReview);
 }
 
 /**
