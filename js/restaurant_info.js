@@ -108,8 +108,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   const form = getFormData(e.target.id);
   document.getElementById(e.target.id).reset();
-  DBHelper.backoffPost({ tries: 6, timeoutLength: 500 }, DBHelper.postReviewRemote, form);
-  addPostedReview(DBHelper.objFromFormData(form));
+  backoffPostReview(10, 1000, form);
 })
 
 
@@ -428,6 +427,28 @@ const putRestaurantInPageTitle = (name = restaurantStore.restaurant.name) => {
 
   head.replaceChild(newTitle, oldTitle);
   head.replaceChild(metaDescription, initialMetaForDescription);
+}
+
+const backoffPostReview = (tries, timeoutLength, form) => {
+  DBHelper.postReviewRemote(form)
+    .then(res => {
+      console.log('This runs!')
+      addPostedReview(DBHelper.objFromFormData(form));
+    })
+    .catch(err => {
+      return tries > 1 ?
+        pause(timeoutLength).then(() => backoffPostReview({
+          tries: tries - 1,
+          timeoutLength: timeoutLength * 2
+        }, DBHelper.postReviewRemote(form))).catch(e => console.error(e)) :
+        Promise.reject(err);
+    });
+}
+
+const pause = (timeoutLength) => {
+  return new Promise(function (resolve) {
+    return setTimeout(resolve, timeoutLength);
+  });
 }
 /**
  * Get a parameter by name from page URL.
