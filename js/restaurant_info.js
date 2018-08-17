@@ -108,10 +108,8 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   const form = getFormData(e.target.id);
   document.getElementById(e.target.id).reset();
-  DBHelper.backoffPost({ tries: 6, timeoutLength: 500 }, DBHelper.postReviewRemote, form)
-    .then(res => {
-      addPostedReview(DBHelper.objFromFormData(form));
-    });
+  DBHelper.backoffPost({ tries: 6, timeoutLength: 500 }, DBHelper.postReviewRemote, form);
+  addPostedReview(DBHelper.objFromFormData(form));
 })
 
 
@@ -241,12 +239,14 @@ const createReviewHTML = (review) => {
   li.appendChild(name);
 
   const date = document.createElement('p');
-  const reviewDate = new Date(review.updatedAt)
+  const reviewDate = review.updatedAt ?
+    new Date(review.updatedAt) :
+    new Date();
   date.innerHTML = `${reviewDate.toLocaleDateString()} at ${reviewDate.toLocaleTimeString()}`;
   li.appendChild(date);
 
   const rating = document.createElement('p');
-  rating.innerHTML = `Rating: ${review.rating}`;
+  rating.innerHTML = `Rating: <span class="review-rating">${'&#x1F374;'.repeat(review.rating)}</span>`;
   li.appendChild(rating);
 
   const comments = document.createElement('p');
