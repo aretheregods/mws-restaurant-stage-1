@@ -266,13 +266,13 @@ const makeEditableReviewHTML = (currentReviewData = {
   const formTitle = document.createElement('h3');
   form.method = 'POST';
   form.id = currentReviewData.currentFormIndex ?
-    `comment${currentReviewData.currentFormIndex}` :
-    'new-comment';
+    'edit-review' :
+    'new-review';
 
   formTitle.textContent = 'Leave a Review';
   
   const nameInput = document.createRange().createContextualFragment(`
-  <div>
+  <div class="review-input">
     <label for="reviewer-name">Name</label>
     <input type="text" name="name" id="reviewer-name" value="${currentReviewData.nameInputValue || ''}">
   </div>`)
@@ -286,13 +286,13 @@ const makeEditableReviewHTML = (currentReviewData = {
   </fieldset>`);
 
   const commentTextarea = document.createRange().createContextualFragment(`
-  <div>
+  <div class="review-input">
     <label for="comment">Comment</label>
     <textarea name="comments" id="comment" value="${currentReviewData.ratingInputValue}"></textarea>
   </div>`);
 
   const submitReview = document.createRange().createContextualFragment(`
-  <div>
+  <div class="review-submit">
     <button type="submit" id="submit-comment">Submit</button>
   </div>`);
 

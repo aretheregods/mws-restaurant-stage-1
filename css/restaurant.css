@@ -219,6 +219,15 @@ nav h1 a {
   letter-spacing: -1px;
   padding-bottom: 1pt;
 }
+#new-review .review-input {
+  display: inline-grid;
+  margin: 0 0 5px 14px;
+}
+#new-review .review-submit {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 20em;
+}
 /* [START] star rating styles */
 fieldset {
   width: max-content;
