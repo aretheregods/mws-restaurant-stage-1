@@ -71,7 +71,7 @@ export class DBHelper {
           pause(timeoutLength).then(() => this.backoffPost({
             tries: tries - 1,
             timeoutLength: timeoutLength * 2
-          }, postFn, postFnArgs)) :
+          }, postFn, postFnArg)) :
           Promise.reject;
       });
   }
