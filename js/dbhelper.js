@@ -77,7 +77,7 @@ export class DBHelper {
   }
 
   static postReviewRemote(review) {
-    return this.fetchRemote(`${this.DATABASE_URL}reviews/`, 'POST', review);
+    return this.fetchRemote(`${this.DATABASE_URL}reviews/`, 'POST', review, 1);
   }
 
   /**
@@ -88,29 +88,16 @@ export class DBHelper {
   static fetchRemote(url=this.DATABASE_URL, method = 'GET', body, timeout=0) {
     return new Promise(function(resolve, reject) {
       const xhr = new XMLHttpRequest();
-      const requestTimeout = timeout && setTimeout(function() {
-        xhr.abort();
-        reject;
-        DBHelper.postEvent('connectionTimedOut', {
-          message: "Your connection seems bad.\nWe saved your message offline.\nWe're retrying...",
-          postData: {
-            url: url,
-            data: body && DBHelper.objFromFormData(body)
-          }
-        }, timeout * 1000);
-      });
-      xhr.onerror = reject;
+      xhr.ontimeout = function () {
+        reject({ message: 'Timed Out', code: xhr.status });
+      }
+      xhr.timeout = timeout && timeout;
       xhr.onload = function() {
-        if (this.status >= 200 && this.status < 300) {
-          requestTimeout && clearTimeout(requestTimeout);
-          return resolve({
-            json: function() {
-              return Promise.resolve(xhr.responseText).then(JSON.parse);
-            }
-          })
-        } else {
-          reject;
-        }
+        return resolve({
+          json: function() {
+            return Promise.resolve(xhr.responseText).then(JSON.parse);
+          }
+        })
       }
       xhr.open(method, url);
       body ? xhr.send(body) : xhr.send();

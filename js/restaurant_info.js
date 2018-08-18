@@ -6,10 +6,12 @@ var restaurantStore = {
   restaurant: {},
   reviews: [],
   reviewsToPost: [],
+  postTries: 0,
   fetchingRestaurant: false,
   fetchingReviews: false,
   mapVisible: false,
-  mapAPILoaded: false
+  mapAPILoaded: false,
+  currentlyConnected: true
 }
 var restaurant;
 var map;
@@ -78,6 +80,12 @@ if (typeof window.CustomEvent === 'function') {
   var reviewsRender = new CustomEvent('reviewsRender', {
     bubbles: true
   });
+  var postSuccess = new CustomEvent('postSuccess', {
+    bubbles: true
+  });
+  var postTimedOut = new CustomEvent('postTimedOut', {
+    bubbles: true
+  });
 }
 // [END] Declare any custom events
 
@@ -107,15 +115,52 @@ document.addEventListener('reviewsRender', (_) => {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   const form = getFormData(e.target.id);
+  const formObj = DBHelper.objFromFormData(form);
+  formObj['time'] = new Date(); 
   document.getElementById(e.target.id).reset();
-  backoffPostReview(10, 1000, form);
+  DBHelper.postReviewRemote(form)
+    .then(res => {
+      console.log('This runs!')
+      addPostedReview();
+      restaurantStore = (!restaurantStore.currentlyConnected || restaurantStore.postTries) ?
+        Object.assign({}, restaurantStore, {
+          currentlyConnected: true,
+          postTries: 0
+        }) :
+        restaurantStore;
+      
+    })
+    .catch(e => {
+      const timedOut = e.message == 'Timed Out';
+      addPostedReview(DBHelper.objFromFormData(form));
+      restaurantStore =  (timedOut || !navigator.onLine && restaurantStore.currentlyConnected) ?
+        Object.assign({}, restaurantStore, { 
+          currentlyConnected: false,
+          postTries: restaurantStore.postTries += 1
+        }) :
+        restaurantStore;
+      restaurantStore.reviewsToPost = !restaurantStore.reviewsToPost[formObj.time] ?
+        Object.assign({}, restaurantStore.reviewsToPost, {
+          [formObj.time]: {
+            display: formObj,
+            send: form
+          }
+        }) :
+        restaurantStore.reviewsToPost;
+      (timedOut && restaurantStore.postTries <= 10) && document.dispatchEvent(postTimedOut);
+    });
 })
 
 
 
-window.addEventListener('postSuccess', (e) => {
-  console.log('message:', e.detail.message);
-})
+document.addEventListener('postSuccess', (e) => {
+  console.log('Review posted');
+});
+
+document.addEventListener('postTimedOut', (e) => {
+  console.log(`${!restaurantStore.currentlyConnected && 'Disconnected.'} Tried to post ${restaurantStore.postTries === 1 ? restaurantStore.postTries + ' time' : restaurantStore.postTries + ' times'}. Review will post later:`, restaurantStore.reviewsToPost);
+
+});
 
 // Reset store then dispatch the mapRender event on click
 mapFab.addEventListener('click', (_) => {
