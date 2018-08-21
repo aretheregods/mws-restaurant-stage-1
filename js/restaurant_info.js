@@ -5,8 +5,10 @@ import { putReviewsInIDB, putReviewInIDB } from './idbhelper.js';
 var restaurantStore = {
   restaurant: {},
   reviews: [],
-  reviewsToPost: [],
-  postTries: 0,
+  thingsToPost: [],
+  nextPostWaitTime: 0,
+  postTriesTotalTime: 0,
+  postTries: 1,
   fetchingRestaurant: false,
   fetchingReviews: false,
   mapVisible: false,
@@ -19,6 +21,10 @@ var observerConfig = {
   rootMargin: '50px 0px',
   threshold: 1
 }
+restaurantStore = !navigator.onLine ? Object.assign({}, restaurantStore, {
+  currentlyConnected: false
+}) :
+  restaurantStore;
 // [END] page data store
 
 // [START] get page elements
@@ -71,6 +77,10 @@ document.addEventListener("DOMContentLoaded", function(event) {
     .then(_ => requestIdleCallback(() => getReviewsObserver(reviewsContainer)));
 })
 
+window.addEventListener('unload', (e) => {
+  window.postTimeOut && window.clearTimeout(postTimeOut);
+})
+
 // [START] Declare any custom events
 // Dispatch this event when the map button is clicked
 if (typeof window.CustomEvent === 'function') {
@@ -80,11 +90,23 @@ if (typeof window.CustomEvent === 'function') {
   var reviewsRender = new CustomEvent('reviewsRender', {
     bubbles: true
   });
+  var postOffline = new CustomEvent('postOffline', {
+    bubbles: true,
+    detail: {
+      message: "You're offline. We saved your post and will try to send it when you reconnect."
+    }
+  })
   var postSuccess = new CustomEvent('postSuccess', {
-    bubbles: true
+    bubbles: true,
+    detail: {
+      message: "Your post was successful!"
+    }
   });
   var postTimedOut = new CustomEvent('postTimedOut', {
-    bubbles: true
+    bubbles: true,
+    detail: {
+      message: "We're having trouble sending your post. We saved it offline and will try again."
+    }
   });
 }
 // [END] Declare any custom events
@@ -115,52 +137,26 @@ document.addEventListener('reviewsRender', (_) => {
 document.addEventListener('submit', (e) => {
   e.preventDefault();
   const form = getFormData(e.target.id);
-  const formObj = DBHelper.objFromFormData(form);
-  formObj['time'] = new Date(); 
+  const formObj = {};
+  const formJSON = DBHelper.objFromFormData(form);
+  formObj['json'] = formJSON;
+  formObj['time'] = new Date();
+  formObj['data'] = form;
+  restaurantStore.thingsToPost.push(formObj);
   document.getElementById(e.target.id).reset();
-  DBHelper.postReviewRemote(form)
-    .then(res => {
-      console.log('This runs!')
-      addPostedReview();
-      restaurantStore = (!restaurantStore.currentlyConnected || restaurantStore.postTries) ?
-        Object.assign({}, restaurantStore, {
-          currentlyConnected: true,
-          postTries: 0
-        }) :
-        restaurantStore;
-      
-    })
-    .catch(e => {
-      const timedOut = e.message == 'Timed Out';
-      addPostedReview(DBHelper.objFromFormData(form));
-      restaurantStore =  (timedOut || !navigator.onLine && restaurantStore.currentlyConnected) ?
-        Object.assign({}, restaurantStore, { 
-          currentlyConnected: false,
-          postTries: restaurantStore.postTries += 1
-        }) :
-        restaurantStore;
-      restaurantStore.reviewsToPost = !restaurantStore.reviewsToPost[formObj.time] ?
-        Object.assign({}, restaurantStore.reviewsToPost, {
-          [formObj.time]: {
-            display: formObj,
-            send: form
-          }
-        }) :
-        restaurantStore.reviewsToPost;
-      (timedOut && restaurantStore.postTries <= 10) && document.dispatchEvent(postTimedOut);
-    });
+  navigator.onLine ?
+    initOnlinePost(restaurantStore.thingsToPost[0]) :
+    initOfflinePost(restaurantStore.thingsToPost[0]);
 })
 
-
-
-document.addEventListener('postSuccess', (e) => {
-  console.log('Review posted');
-});
-
-document.addEventListener('postTimedOut', (e) => {
-  console.log(`${!restaurantStore.currentlyConnected && 'Disconnected.'} Tried to post ${restaurantStore.postTries === 1 ? restaurantStore.postTries + ' time' : restaurantStore.postTries + ' times'}. Review will post later:`, restaurantStore.reviewsToPost);
-
-});
+for (let listener of ['postOffline', 'postSuccess', 'postTimedOut']) {
+  document.addEventListener(listener, (e) => {
+    showPostToast(e.detail.message);
+    window.postTimeOut = listener === 'postTimedOut' && setTimeout(() => {
+      initOnlinePost(restaurantStore.thingsToPost[0])
+    }, restaurantStore.nextPostWaitTime);
+  })
+}
 
 // Reset store then dispatch the mapRender event on click
 mapFab.addEventListener('click', (_) => {
@@ -439,6 +435,68 @@ const watchReviews = (entry, observer) => {
     .catch(e => console.error(e))
     .then(_ => requestIdleCallback(() => putReviewsInIDB(restaurantStore.reviews)))
     .catch(e => console.error(e));
+}
+
+const initOfflinePost = (formWithInfo) => {
+  document.removeEventListener('onoffline', _listenerOffline);
+  document.addEventListener('ononline', _listenerOnline);
+  document.dispatchEvent(postOffline);
+}
+
+const initOnlinePost = (formWithInfo) => {
+  document.removeEventListener('ononline', _listenerOnline);
+  document.addEventListener('onoffline', _listenerOffline)
+  DBHelper.postReviewRemote(formWithInfo)
+    .then(res => {
+      restaurantStore = (!restaurantStore.currentlyConnected || restaurantStore.postTries) ?
+        Object.assign({}, restaurantStore, {
+          currentlyConnected: true,
+          nextPostWaitTime: 0,
+          postTriesTotalTime: 0,
+          postTries: 1
+        }) :
+        restaurantStore;
+      delete restaurantStore.thingsToPost[formObj.time];
+      document.dispatchEvent(postSuccess);
+    })
+    .catch(e => {
+      const timedOut = e.message == 'Timed Out';
+      restaurantStore = Object.assign({}, restaurantStore, {
+        nextPostWaitTime: calculateWaitTime(restaurantStore.postTries, 500)
+      });
+      console.log(restaurantStore.nextPostWaitTime);
+      restaurantStore =  timedOut ?
+        Object.assign({}, restaurantStore, { 
+          currentlyConnected: false,
+          postTries: restaurantStore.postTries += 1,
+          postTriesTotalTime: restaurantStore.postTriesTotalTime += restaurantStore.nextPostWaitTime
+        }) :
+        restaurantStore;
+      console.log(restaurantStore.postTriesTotalTime);
+      (timedOut && restaurantStore.postTries <= 11) ?
+        document.dispatchEvent(postTimedOut) :
+        document.dispatchEvent(postOffline);
+    })
+}
+
+const showPostToast = (message) => {
+  console.log(message);
+}
+
+const calculateWaitTime = (attempt, delay) => Math.floor(Math.random() * Math.pow(2, attempt) * delay);
+
+function _listenerOffline(e) {
+  restaurantStore.currentlyConnected = false;
+}
+
+function _listenerOnline(e) {
+  restaurantStore = Object.assign({}, restaurantStore, {
+    currentlyConnected: true,
+    nextPostWaitTime: 0,
+    postTriesTotalTime: 0,
+    postTries: 1
+  });
+  document.dispatchEvent(postTimedOut);
 }
 
 /**
