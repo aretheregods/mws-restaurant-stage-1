@@ -472,7 +472,7 @@ const watchReviews = (entry, observer) => {
     .catch(e => console.error(e));
 }
 
-const initOfflinePost = (formWithInfo) => {
+const initOfflinePost = () => {
   window.removeEventListener('offline', _listenerOffline);
   window.addEventListener('online', _listenerOnline);
   document.dispatchEvent(postOffline);
