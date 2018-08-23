@@ -95,17 +95,11 @@ if (typeof window.CustomEvent === 'function') {
     detail: {
       message: "You're offline. We saved your review and will try to send it when you reconnect."
     }
-  })
-  var favoriteOffline = new CustomEvent('favoriteOffline', {
-    bubbles: true,
-    detail: {
-      message: 'Your connection is bad. Try again when you have a better connection'
-    }
   });
   var postSuccess = new CustomEvent('postSuccess', {
     bubbles: true,
     detail: {
-      message: `You reviewed ${restaurantStore.restaurant.name}!`
+      message: `You reviewed this restaurant!`
     }
   });
   var favoriteSuccess = new CustomEvent('favoriteSuccess', {
@@ -164,15 +158,19 @@ document.addEventListener('submit', (e) => {
   const formObj = {};
   const formJSON = DBHelper.objFromFormData(form);
   formObj['json'] = formJSON;
-  formObj['time'] = new Date();
   formObj['data'] = form;
   restaurantStore.thingsToPost.push(formObj);
   document.getElementById(e.target.id).reset();
+  addPostedReview(formJSON);
+  
   navigator.onLine ?
     initOnlinePost(restaurantStore.thingsToPost[0]) :
     initOfflinePost(restaurantStore.thingsToPost[0]);
 })
 
+/**
+ * Adds post related event listeners
+ */
 for (let listener of ['postOffline', 'favoriteOffline', 'postSuccess', 'favoriteSuccess', 'unfavoriteSuccess', 'postTimedOut', 'favoriteOffline']) {
   document.addEventListener(listener, (e) => {
     showPostToast(e.detail.message);
@@ -475,17 +473,16 @@ const watchReviews = (entry, observer) => {
 }
 
 const initOfflinePost = (formWithInfo) => {
-  document.removeEventListener('onoffline', _listenerOffline);
-  document.addEventListener('ononline', _listenerOnline);
+  window.removeEventListener('offline', _listenerOffline);
+  window.addEventListener('online', _listenerOnline);
   document.dispatchEvent(postOffline);
-  document.dispatchEvent(favoriteOffline);
 }
 
 const initOnlinePost = (formWithInfo) => {
-  document.removeEventListener('ononline', _listenerOnline);
-  document.addEventListener('onoffline', _listenerOffline)
-  typeof formWithInfo === 'object' ?
-    DBHelper.postRequestRemote(formWithInfo)
+  window.removeEventListener('online', _listenerOnline);
+  window.addEventListener('offline', _listenerOffline)
+  typeof formWithInfo != 'boolean' ?
+    DBHelper.postRequestRemote(formWithInfo.data)
       .then(res => {
         restaurantStore = (!restaurantStore.currentlyConnected || restaurantStore.postTries) ?
           Object.assign({}, restaurantStore, {
@@ -495,7 +492,7 @@ const initOnlinePost = (formWithInfo) => {
             postTries: 1
           }) :
           restaurantStore;
-        delete restaurantStore.thingsToPost[formObj.time];
+        delete restaurantStore.thingsToPost[0];
         document.dispatchEvent(postSuccess);
       })
       .catch(e => {
@@ -538,6 +535,7 @@ const calculateWaitTime = (attempt, delay) => Math.floor(Math.random() * Math.po
 
 function _listenerOffline(e) {
   restaurantStore.currentlyConnected = false;
+  window.postTimeOut && clearTimeout(postTimeOut);
 }
 
 function _listenerOnline(e) {
@@ -547,8 +545,7 @@ function _listenerOnline(e) {
     postTriesTotalTime: 0,
     postTries: 1
   });
-  document.dispatchEvent(postTimedOut);
-  document.dispatchEvent(favoriteOffline);
+  initOnlinePost(restaurantStore.thingsToPost[0]);
 }
 
 const toggleFavorite = () => {
