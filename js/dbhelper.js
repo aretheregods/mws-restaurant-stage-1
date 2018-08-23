@@ -76,8 +76,10 @@ export class DBHelper {
     return this.fetchRemote(`${this.DATABASE_URL}reviews/?restaurant_id=${id}`);
   }
 
-  static postReviewRemote(review) {
-    return this.fetchRemote(`${this.DATABASE_URL}reviews/`, 'POST', review, 1);
+  static postRequestRemote(data, id) {
+    return typeof data === 'boolean' ?
+      this.fetchRemote(`${this.DATABASE_URL}restaurants/${id}/?is_favorite=${data}`, 'POST', null, 4000) :
+      this.fetchRemote(`${this.DATABASE_URL}reviews/`, 'POST', data, 4000);
   }
 
   /**

@@ -191,6 +191,9 @@ nav h1 a {
   min-height: 40px;
 }
 #restaurant-cuisine {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   background-color: #333;
   color: #ddd;
   font-size: 12pt;
@@ -202,6 +205,22 @@ nav h1 a {
   text-transform: uppercase;
   width: 90%;
   min-height: 40px;
+}
+#restaurant-cuisine span:first-child {
+  width: 100%;
+}
+#restaurant-cuisine span:last-child {
+  font-size: 200%;
+}
+#favorite {
+  display: flex;
+  flex-direction: row;
+}
+#favorite.favorited {
+  color: gold;
+}
+#favorite.unfavorited {
+  color: inherit;
 }
 #restaurant-container, #reviews-container {
   border-bottom: 1px solid #d9d9d9;

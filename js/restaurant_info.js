@@ -93,19 +93,43 @@ if (typeof window.CustomEvent === 'function') {
   var postOffline = new CustomEvent('postOffline', {
     bubbles: true,
     detail: {
-      message: "You're offline. We saved your post and will try to send it when you reconnect."
+      message: "You're offline. We saved your review and will try to send it when you reconnect."
     }
   })
+  var favoriteOffline = new CustomEvent('favoriteOffline', {
+    bubbles: true,
+    detail: {
+      message: 'Your connection is bad. Try again when you have a better connection'
+    }
+  });
   var postSuccess = new CustomEvent('postSuccess', {
     bubbles: true,
     detail: {
-      message: "Your post was successful!"
+      message: `You reviewed ${restaurantStore.restaurant.name}!`
+    }
+  });
+  var favoriteSuccess = new CustomEvent('favoriteSuccess', {
+    bubbles: true,
+    detail: {
+      message: `You favorited this restaurant`
+    }
+  });
+  var unfavoriteSuccess = new CustomEvent('unfavoriteSuccess', {
+    bubbles: true,
+    detail: {
+      message: 'You unfavorited this restaurant'
     }
   });
   var postTimedOut = new CustomEvent('postTimedOut', {
     bubbles: true,
     detail: {
-      message: "We're having trouble sending your post. We saved it offline and will try again."
+      message: "We're having trouble sending your review. We saved it offline and will try again."
+    }
+  });
+  var favoriteFailure = new CustomEvent('favoriteFailure', {
+    bubbles: true,
+    detail: {
+      message: "We couldn't send your favorite. Please check your network connection and try again."
     }
   });
 }
@@ -149,12 +173,15 @@ document.addEventListener('submit', (e) => {
     initOfflinePost(restaurantStore.thingsToPost[0]);
 })
 
-for (let listener of ['postOffline', 'postSuccess', 'postTimedOut']) {
+for (let listener of ['postOffline', 'favoriteOffline', 'postSuccess', 'favoriteSuccess', 'unfavoriteSuccess', 'postTimedOut', 'favoriteOffline']) {
   document.addEventListener(listener, (e) => {
     showPostToast(e.detail.message);
     window.postTimeOut = listener === 'postTimedOut' && setTimeout(() => {
       initOnlinePost(restaurantStore.thingsToPost[0])
     }, restaurantStore.nextPostWaitTime);
+    (listener === 'unfavoriteSuccess' ||
+      listener === 'favoriteSuccess') &&
+      toggleFavorite();
   })
 }
 
@@ -198,7 +225,17 @@ const fillRestaurantHTML = (restaurant = restaurantStore.restaurant) => {
   image.alt = `Image of ${restaurant.name}`;
 
   const cuisine = document.getElementById('restaurant-cuisine');
-  cuisine.innerHTML = restaurant.cuisine_type;
+  var favorite = document.createElement('span'),
+          type = document.createElement('span');
+  favorite.innerHTML = `&#9825;`;
+  favorite.id = 'favorite';
+  favorite.className = `${restaurantStore.restaurant.is_favorite ? 'favorited' : 'unfavorited'}`;
+  type.textContent = restaurant.cuisine_type;
+  cuisine.appendChild(type);
+  cuisine.appendChild(favorite);
+  favorite.addEventListener('click', (e) => {
+    initOnlinePost(!restaurantStore.restaurant.is_favorite)
+  })
 
   // fill operating hours
   if (restaurant.operating_hours) {
@@ -441,42 +478,56 @@ const initOfflinePost = (formWithInfo) => {
   document.removeEventListener('onoffline', _listenerOffline);
   document.addEventListener('ononline', _listenerOnline);
   document.dispatchEvent(postOffline);
+  document.dispatchEvent(favoriteOffline);
 }
 
 const initOnlinePost = (formWithInfo) => {
   document.removeEventListener('ononline', _listenerOnline);
   document.addEventListener('onoffline', _listenerOffline)
-  DBHelper.postReviewRemote(formWithInfo)
-    .then(res => {
-      restaurantStore = (!restaurantStore.currentlyConnected || restaurantStore.postTries) ?
-        Object.assign({}, restaurantStore, {
-          currentlyConnected: true,
-          nextPostWaitTime: 0,
-          postTriesTotalTime: 0,
-          postTries: 1
-        }) :
-        restaurantStore;
-      delete restaurantStore.thingsToPost[formObj.time];
-      document.dispatchEvent(postSuccess);
-    })
-    .catch(e => {
-      const timedOut = e.message == 'Timed Out';
-      restaurantStore = Object.assign({}, restaurantStore, {
-        nextPostWaitTime: calculateWaitTime(restaurantStore.postTries, 500)
+  typeof formWithInfo === 'object' ?
+    DBHelper.postRequestRemote(formWithInfo)
+      .then(res => {
+        restaurantStore = (!restaurantStore.currentlyConnected || restaurantStore.postTries) ?
+          Object.assign({}, restaurantStore, {
+            currentlyConnected: true,
+            nextPostWaitTime: 0,
+            postTriesTotalTime: 0,
+            postTries: 1
+          }) :
+          restaurantStore;
+        delete restaurantStore.thingsToPost[formObj.time];
+        document.dispatchEvent(postSuccess);
+      })
+      .catch(e => {
+        const timedOut = e.message == 'Timed Out';
+        restaurantStore = Object.assign({}, restaurantStore, {
+          nextPostWaitTime: calculateWaitTime(restaurantStore.postTries, 500)
+        });
+        console.log(restaurantStore.nextPostWaitTime);
+        restaurantStore = timedOut ?
+          Object.assign({}, restaurantStore, {
+            currentlyConnected: false,
+            postTries: restaurantStore.postTries += 1,
+            postTriesTotalTime: restaurantStore.postTriesTotalTime += restaurantStore.nextPostWaitTime
+          }) :
+          restaurantStore;
+        console.log(restaurantStore.postTriesTotalTime);
+        (timedOut && restaurantStore.postTries <= 11) ?
+          document.dispatchEvent(postTimedOut) :
+          document.dispatchEvent(postOffline);
+      }) :
+    DBHelper.postRequestRemote(formWithInfo, restaurantStore.restaurant.id)
+      .then(res => {
+        restaurantStore.restaurant = Object.assign({}, restaurantStore.restaurant, {
+          is_favorite: !restaurantStore.restaurant.is_favorite
+        });
+        restaurantStore.restaurant.is_favorite ?
+          document.dispatchEvent(favoriteSuccess) :
+          document.dispatchEvent(unfavoriteSuccess);
+      })
+      .catch((e) => {
+        document.dispatchEvent(favoriteFailure)
       });
-      console.log(restaurantStore.nextPostWaitTime);
-      restaurantStore =  timedOut ?
-        Object.assign({}, restaurantStore, { 
-          currentlyConnected: false,
-          postTries: restaurantStore.postTries += 1,
-          postTriesTotalTime: restaurantStore.postTriesTotalTime += restaurantStore.nextPostWaitTime
-        }) :
-        restaurantStore;
-      console.log(restaurantStore.postTriesTotalTime);
-      (timedOut && restaurantStore.postTries <= 11) ?
-        document.dispatchEvent(postTimedOut) :
-        document.dispatchEvent(postOffline);
-    })
 }
 
 const showPostToast = (message) => {
@@ -497,6 +548,14 @@ function _listenerOnline(e) {
     postTries: 1
   });
   document.dispatchEvent(postTimedOut);
+  document.dispatchEvent(favoriteOffline);
+}
+
+const toggleFavorite = () => {
+  const favorite = document.getElementById('favorite');
+  restaurantStore.restaurant.is_favorite ?
+    favorite.classList.replace('unfavorited', 'favorited') :
+    favorite.classList.replace('favorited', 'unfavorited');
 }
 
 /**
@@ -532,27 +591,6 @@ const putRestaurantInPageTitle = (name = restaurantStore.restaurant.name) => {
   head.replaceChild(metaDescription, initialMetaForDescription);
 }
 
-const backoffPostReview = (tries, timeoutLength, form) => {
-  DBHelper.postReviewRemote(form)
-    .then(res => {
-      console.log('This runs!')
-      addPostedReview(DBHelper.objFromFormData(form));
-    })
-    .catch(err => {
-      return tries > 1 ?
-        pause(timeoutLength).then(() => backoffPostReview({
-          tries: tries - 1,
-          timeoutLength: timeoutLength * 2
-        }, DBHelper.postReviewRemote(form))).catch(e => console.error(e)) :
-        Promise.reject(err);
-    });
-}
-
-const pause = (timeoutLength) => {
-  return new Promise(function (resolve) {
-    return setTimeout(resolve, timeoutLength);
-  });
-}
 /**
  * Get a parameter by name from page URL.
  * @param {!string} name
