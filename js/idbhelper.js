@@ -40,6 +40,17 @@ export function fetchReviewsFromIDB(id) {
   }).catch(e => console.error("Some error:", e))
 }
 
+export function fetchReviewsToPostFromIDB(id) {
+  return dbObject.then(db => {
+    if (!db) return;
+    const trans = db.transaction('reviewsToPost');
+    const store = trans.objectStore('reviewsToPost');
+    const index = store.index('restaurant_id');
+    const reviews = index.get(String(id));
+    return reviews;
+  }).catch((e) => console.error("Some error", e));
+}
+
 /**
  * Adding records to the DB store
  * @param {Array} restaurants
@@ -106,6 +117,11 @@ function _openIDBInstance() {
           revStore.createIndex('restaurant_id', 'restaurant_id');
         }
       case 1:
+        if(!handleDB.objectStoreNames.contains("reviewsToPost")) {
+          let revPostStore = handleDB.createObjectStore("reviewsToPost", { keyPath: 'id' });
+          revPostStore.createIndex('restaurant_id', 'restaurant_id');
+        }
+      case 2:
         if(!handleDB.objectStoreNames.contains("restaurants")) {
           let resStore = handleDB.createObjectStore("restaurants", { keyPath: 'id' });
           resStore.createIndex('cuisines', 'cuisine_type');
