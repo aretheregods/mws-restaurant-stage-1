@@ -40,17 +40,6 @@ export function fetchReviewsFromIDB(id) {
   }).catch(e => console.error("Some error:", e))
 }
 
-export function fetchReviewsToPostFromIDB(id) {
-  return dbObject.then(db => {
-    if (!db) return;
-    const trans = db.transaction('reviewsToPost');
-    const store = trans.objectStore('reviewsToPost');
-    const index = store.index('restaurant_id');
-    const reviews = index.get(String(id));
-    return reviews;
-  }).catch((e) => console.error("Some error", e));
-}
-
 /**
  * Adding records to the DB store
  * @param {Array} restaurants
@@ -82,17 +71,6 @@ export function putReviewsInIDB(reviews) {
   }).catch(e => "Some error or another: " + e);
 }
 
-export function putReviewInIDB(review) {
-  return dbObject.then(db => {
-    if (!db) return;
-    const trans = db.transaction('reviews', 'readwrite');
-    const store = trans.objectStore('reviews');
-    store.put(review);
-    return trans.complete;
-  }).catch(e => console.error(e));
-}
-
-
 export function restaurantsInIDB() {
   return dbObject.then(db => {
     if (!db) Promise.resolve();
@@ -117,11 +95,6 @@ function _openIDBInstance() {
           revStore.createIndex('restaurant_id', 'restaurant_id');
         }
       case 1:
-        if(!handleDB.objectStoreNames.contains("reviewsToPost")) {
-          let revPostStore = handleDB.createObjectStore("reviewsToPost", { keyPath: 'id' });
-          revPostStore.createIndex('restaurant_id', 'restaurant_id');
-        }
-      case 2:
         if(!handleDB.objectStoreNames.contains("restaurants")) {
           let resStore = handleDB.createObjectStore("restaurants", { keyPath: 'id' });
           resStore.createIndex('cuisines', 'cuisine_type');
