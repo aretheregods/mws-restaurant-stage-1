@@ -18,10 +18,7 @@ var restaurantStore = {
 }
 var restaurant;
 var map;
-var observerConfig = {
-  rootMargin: '50px 0px',
-  threshold: 1
-}
+
 restaurantStore = !navigator.onLine ? Object.assign({}, restaurantStore, {
   currentlyConnected: false
 }) :
@@ -536,7 +533,7 @@ const initOnlinePost = (formWithInfo) => {
           }) :
           restaurantStore;
         console.log(restaurantStore.postTriesTotalTime);
-        (timedOut && restaurantStore.postTries <= 11) ?
+        (timedOut && restaurantStore.postTries <= 6) ?
           document.dispatchEvent(postTimedOut) :
           document.dispatchEvent(postOffline);
       }) :
