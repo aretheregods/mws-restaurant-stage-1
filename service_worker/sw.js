@@ -12,6 +12,8 @@ self.addEventListener('install', function(evt) {
 
 self.addEventListener('fetch', function(evt) {
   let request = evt.request.clone();
+  console.log(request.url);
+  
   
   if (!request.url.endsWith('/restaurants')) {
     evt.respondWith(fromCache(request));
