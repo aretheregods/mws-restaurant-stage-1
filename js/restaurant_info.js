@@ -149,7 +149,10 @@ window.addEventListener('resize', (_) => {
 document.addEventListener('mapRender', (_) => {
   toggleMap();
 })
-
+/**
+ * Renders reviews with data from the network when online
+ * And with data from IDB when offline
+ */
 document.addEventListener('reviewsRender', (_) => {
   navigator.onLine ?
     fillReviewsHTML() :
@@ -265,7 +268,10 @@ const fillRestaurantHoursHTML = (operatingHours = restaurantStore.restaurant.ope
     hours.appendChild(row);
   }
 }
-
+/**
+ * Optimistically adds a new review to the list of reviews
+ * @param {Object} review 
+ */
 const addPostedReview = (review) => {
   reviewsContainer = document.getElementById('reviews-container');
   const ul = reviewsContainer.getElementsByTagName('ul')[0];
@@ -341,6 +347,11 @@ const createReviewHTML = (review) => {
   return li;
 }
 
+/**
+ * Does what it says on the tin -
+ * As in, it makes the html for the new review form
+ * @param {Object} currentReviewData
+ */
 const makeEditableReviewHTML = (currentReviewData = {
   currentFormIndex: 0,
   nameInputValue: '',
@@ -387,6 +398,10 @@ const makeEditableReviewHTML = (currentReviewData = {
   return form;
 }
 
+/**
+ * Creates HTML for rating input
+ * Mostly to clean up the function in which this is used
+ */
 const ratingInputHTML = () => {
   const radios = [[1, 'Awful'], [2, 'Not Tasty'], [3, 'Edible'], [4, 'Tasty'], [5, 'Delicious']].map(n => `
   <input type="radio" id="star${n[0]}" name="rating" value="${n[0]}">
@@ -441,6 +456,10 @@ const putMapInHead = (apiLoaded = restaurantStore.mapAPILoaded) => {
   return;
 }
 
+/**
+ * Gets the FormData from the form with the given id
+ * @param {string|number} id 
+ */
 const getFormData = (id) => {
   const currentForm = document.getElementById(id);
   const formObject = new FormData(currentForm);
@@ -448,6 +467,10 @@ const getFormData = (id) => {
   return formObject;
 }
 
+/**
+ * Gets reviews from either the network
+ * And puts them in idb
+ */
 const getReviews = () => {
   return DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
     .then(res => {
@@ -468,12 +491,20 @@ const getReviews = () => {
     .catch(e => console.error(e));
 }
 
+/**
+ * Handles state of application when offline post is requested
+ */
 const initOfflinePost = () => {
   window.removeEventListener('offline', _listenerOffline);
   window.addEventListener('online', _listenerOnline);
   document.dispatchEvent(postOffline);
 }
 
+/**
+ * Sends online post requests
+ * And handles state of application on success or failure
+ * @param {Object|boolean} formWithInfo 
+ */
 const initOnlinePost = (formWithInfo) => {
   window.removeEventListener('online', _listenerOnline);
   window.addEventListener('offline', _listenerOffline)
@@ -523,6 +554,10 @@ const initOnlinePost = (formWithInfo) => {
       });
 }
 
+/**
+ * Shows the toast message when a post or other action is made
+ * @param {string} message 
+ */
 const showPostToast = (message) => {
   const toastElement = document.createRange().createContextualFragment(`<div id="toast">${message}</div>`);
   document.getElementsByTagName('body')[0].appendChild(toastElement);
@@ -531,13 +566,26 @@ const showPostToast = (message) => {
   }, 3000);
 }
 
+/**
+ * Calculates the waittime for the next post attempt
+ * Used when a post request fails for event based
+ * Exponential Backoff infrastructure
+ * @param {number} attempt 
+ * @param {number} delay 
+ */
 const calculateWaitTime = (attempt, delay) => Math.floor(Math.random() * Math.pow(2, attempt) * delay);
-
+/**
+ * Handles state when application goes offline
+ * @param {Object} e 
+ */
 function _listenerOffline(e) {
   restaurantStore.currentlyConnected = false;
   window.postTimeOut && clearTimeout(postTimeOut);
 }
-
+/**
+ * Handles state when appliation comes online again
+ * Specifically when a new post request will occur
+ */
 function _listenerOnline(e) {
   restaurantStore = Object.assign({}, restaurantStore, {
     currentlyConnected: true,
@@ -547,7 +595,9 @@ function _listenerOnline(e) {
   });
   initOnlinePost(restaurantStore.thingsToPost[0]);
 }
-
+/**
+ * Toggles classes for favoriting/unfavoriting of a restaurant
+ */
 const toggleFavorite = () => {
   const favorite = document.getElementById('favorite');
   if (restaurantStore.restaurant.is_favorite) {
