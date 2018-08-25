@@ -217,6 +217,7 @@ nav h1 a {
 #restaurant-cuisine span:last-child {
   font-size: 125%;
 }
+/* Styles for favorite button - obviously */
 #favorite {
   display: flex;
   flex-direction: row;
@@ -251,6 +252,7 @@ nav h1 a {
   letter-spacing: -1px;
   padding-bottom: 1pt;
 }
+/* Styles for new review form */
 #new-review .review-input {
   display: inline-grid;
   margin: 0 0 5px 14px;
@@ -347,6 +349,7 @@ fieldset div > label:active {
   font-size: 150%;
   opacity: 50%;
 }
+/* Fixes ugly map issue on portrait iPad */
 @media screen and (min-width: 600px) {
   #map-container {
     top: 211px;
