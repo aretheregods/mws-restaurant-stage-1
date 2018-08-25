@@ -19,6 +19,10 @@ export function fetchRestaurantsFromIDB() {
   }).catch(e => console.log("Some error:", e));
 }
 
+/**
+ * Does what it says on the tin
+ * @param {number} id 
+ */
 export function fetchRestaurantFromIDB(id) {
   return dbObject.then(db => {
     if (!db) Promise.resolve();
@@ -27,23 +31,6 @@ export function fetchRestaurantFromIDB(id) {
     const restaurant = store.get(~~id);
     return restaurant;
   }).catch(e => console.log("Some error:", e));
-}
-
-export function fetchReviewsFromIDB(id) {
-  return dbObject.then(db => {
-    if (!db) return;
-    let reviews = [];
-    const trans = db.transaction('reviews');
-    const store = trans.objectStore('reviews');
-    store.iterateCursor((cursor) => {
-      if (!cursor) return;
-      cursor.value.restaurant_id == id && reviews.push(cursor.value);
-      cursor.continue();
-    })
-    return new Promise((resolve,reject) => {
-      resolve(reviews);
-    });
-  }).catch(e => console.error("Some error:", e))
 }
 
 /**
@@ -67,6 +54,12 @@ export function putRestaurantsInIDB(restaurants) {
   }).catch(e => "Some error or another: " + e);
 }
 
+/**
+ * Puts reviews on their associated restaurant object
+ * This makes it easier to manage loading reviews offline
+ * @param {Array} reviews
+ * @param {number} id
+ */
 export function putReviewsInIDB(reviews, id) {
   return dbObject.then(db => {
     if (!db) return;
@@ -81,6 +74,10 @@ export function putReviewsInIDB(reviews, id) {
   }).catch(e => "Some error or another: " + e);
 }
 
+/**
+ * Checks to see if there are restaurants in IDB yet
+ * Used to see if we need to fetch them from the network
+ */
 export function restaurantsInIDB() {
   return dbObject.then(db => {
     if (!db) Promise.resolve();
@@ -98,18 +95,10 @@ function _openIDBInstance() {
   }
 
   return idb.open("restaurants", 2, handleDB => {
-    switch (handleDB.oldVersion) {
-      case 0:
-        if(!handleDB.objectStoreNames.contains("reviews")) {
-          let revStore = handleDB.createObjectStore("reviews", { keyPath: 'id' });
-          revStore.createIndex('restaurant_id', 'restaurant_id');
-        }
-      case 1:
-        if(!handleDB.objectStoreNames.contains("restaurants")) {
-          let resStore = handleDB.createObjectStore("restaurants", { keyPath: 'id' });
-          resStore.createIndex('cuisines', 'cuisine_type');
-          resStore.createIndex('neighborhoods', 'neighborhood');
-        }
+    if(!handleDB.objectStoreNames.contains("restaurants")) {
+      let resStore = handleDB.createObjectStore("restaurants", { keyPath: 'id' });
+      resStore.createIndex('cuisines', 'cuisine_type');
+      resStore.createIndex('neighborhoods', 'neighborhood');
     }
   })
-};
+}
