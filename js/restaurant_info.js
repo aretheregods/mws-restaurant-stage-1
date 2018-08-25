@@ -1,5 +1,5 @@
 import { DBHelper } from './dbhelper.js';
-import { putReviewsInIDB, putReviewInIDB } from './idbhelper.js';
+import { putReviewsInIDB, putReviewInIDB, fetchReviewsFromIDB } from './idbhelper.js';
 
 // [START] page data store
 var restaurantStore = {
@@ -9,6 +9,7 @@ var restaurantStore = {
   nextPostWaitTime: 0,
   postTriesTotalTime: 0,
   postTries: 1,
+  sendingPost: false,
   fetchingRestaurant: false,
   fetchingReviews: false,
   mapVisible: false,
@@ -62,6 +63,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
         restaurant: res,
         loading: false
       });
+      console.log(restaurantStore)
       return res;
     })
     .catch(e => console.log('Some error:', e))
@@ -74,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function(event) {
     .catch(e => console.log('Some error:', e))
     .then(_ => document.dispatchEvent(reviewsRender))
     .then(_ => media1024 && putMapInHead())
-    .then(_ => requestIdleCallback(() => getReviewsObserver(reviewsContainer)));
+    .then(_ => requestIdleCallback(() => getReviews()));
 })
 
 window.addEventListener('unload', (e) => {
@@ -149,7 +151,9 @@ document.addEventListener('mapRender', (_) => {
 })
 
 document.addEventListener('reviewsRender', (_) => {
-  fillReviewsHTML();
+  navigator.onLine ?
+    fillReviewsHTML() :
+    fillReviewsHTML(restaurantStore.restaurant.reviews);
 })
 
 document.addEventListener('submit', (e) => {
@@ -225,9 +229,9 @@ const fillRestaurantHTML = (restaurant = restaurantStore.restaurant) => {
   const cuisine = document.getElementById('restaurant-cuisine');
   var favorite = document.createElement('span'),
           type = document.createElement('span');
-  favorite.innerHTML = `&#9825;`;
   favorite.id = 'favorite';
   favorite.className = `${restaurantStore.restaurant.is_favorite ? 'favorited' : 'unfavorited'}`;
+  favorite.innerHTML = `<button aria-label="Toggle Favorite">&#9829;</button>`;
   type.textContent = restaurant.cuisine_type;
   cuisine.appendChild(type);
   cuisine.appendChild(favorite);
@@ -289,9 +293,15 @@ const fillReviewsHTML = (reviews = restaurantStore.reviews) => {
     noReviews.innerHTML = 'No reviews yet!';
     reviewsContainer.appendChild(noReviews);
     return;
-  } else if (reviews.length) {
+  } else if (!reviewsContainer.contains(reviewsContainer.getElementsByTagName('h2')[0]) &&
+    !reviewsContainer.contains(document.getElementById('new-review'))) {
+    reviewsContainer.appendChild(title);
+    reviewsContainer.appendChild(newReview);
+    reviewsContainer.appendChild(hr);
+  }
+  if (reviews.length || restaurantStore.restaurant.reviews.length) {
     noReviews = reviewsContainer.getElementsByTagName('p')[0];
-    noReviews.innerHTML === 'No reviews yet!' && reviewsContainer.removeChild(noReviews);
+    (noReviews && noReviews.innerHTML === 'No reviews yet!') && reviewsContainer.removeChild(noReviews);
   }
 
   const ul = document.getElementById('reviews-list');
@@ -438,20 +448,7 @@ const getFormData = (id) => {
   return formObject;
 }
 
-const getReviewsObserver = () => {
-  reviewsContainer = document.getElementById('reviews-container');
-  let observer = new IntersectionObserver(watchReviews, observerConfig);
-  observer.observe(reviewsContainer);
-}
-
-const watchReviews = (entry, observer) => {
-  if (entry.intersectionRatio < observerConfig.threshold) {
-    return;
-  }
-  observer.unobserve(reviewsContainer);
-  restaurantStore = Object.assign({}, restaurantStore, {
-    fetchingReviews: true
-  })
+const getReviews = () => {
   return DBHelper.fetchReviewsRemote(restaurantStore.restaurant.id)
     .then(res => {
       let r = res.json();
@@ -459,6 +456,7 @@ const watchReviews = (entry, observer) => {
     })
     .catch(e => console.error(e))
     .then(res => {
+      console.log(res);
       restaurantStore = Object.assign({}, restaurantStore, {
         reviews: res,
         fetchingReviews: false
@@ -466,9 +464,7 @@ const watchReviews = (entry, observer) => {
       reviewsContainer.dispatchEvent(reviewsRender);
     })
     .catch(e => console.error(e))
-    .then(_ => observer.disconnect())
-    .catch(e => console.error(e))
-    .then(_ => requestIdleCallback(() => putReviewsInIDB(restaurantStore.reviews)))
+    .then(_ => requestIdleCallback(() => putReviewsInIDB(restaurantStore.reviews, restaurantStore.restaurant.id)))
     .catch(e => console.error(e));
 }
 
@@ -528,7 +524,11 @@ const initOnlinePost = (formWithInfo) => {
 }
 
 const showPostToast = (message) => {
-  console.log(message);
+  const toastElement = document.createRange().createContextualFragment(`<div id="toast">${message}</div>`);
+  document.getElementsByTagName('body')[0].appendChild(toastElement);
+  window.toastTimeout = setTimeout(() => {
+    document.getElementsByTagName('body')[0].removeChild(document.getElementById('toast'));
+  }, 3000);
 }
 
 const calculateWaitTime = (attempt, delay) => Math.floor(Math.random() * Math.pow(2, attempt) * delay);
@@ -550,11 +550,12 @@ function _listenerOnline(e) {
 
 const toggleFavorite = () => {
   const favorite = document.getElementById('favorite');
-  restaurantStore.restaurant.is_favorite ?
-    favorite.classList.replace('unfavorited', 'favorited') :
+  if (restaurantStore.restaurant.is_favorite) {
+    favorite.classList.replace('unfavorited', 'favorited');
+  } else {
     favorite.classList.replace('favorited', 'unfavorited');
+  }
 }
-
 /**
  * Fix map state in specific cases
  * Doesn't work on iPad orientationChange
