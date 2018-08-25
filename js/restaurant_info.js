@@ -1,5 +1,5 @@
 import { DBHelper } from './dbhelper.js';
-import { putReviewsInIDB, putReviewInIDB, fetchReviewsFromIDB } from './idbhelper.js';
+import { putReviewsInIDB } from './idbhelper.js';
 
 // [START] page data store
 var restaurantStore = {
