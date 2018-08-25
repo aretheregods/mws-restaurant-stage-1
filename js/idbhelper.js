@@ -32,11 +32,17 @@ export function fetchRestaurantFromIDB(id) {
 export function fetchReviewsFromIDB(id) {
   return dbObject.then(db => {
     if (!db) return;
+    let reviews = [];
     const trans = db.transaction('reviews');
     const store = trans.objectStore('reviews');
-    const index = store.index('restaurant_id');
-    const reviews = index.get(String(id));
-    return reviews;
+    store.iterateCursor((cursor) => {
+      if (!cursor) return;
+      cursor.value.restaurant_id == id && reviews.push(cursor.value);
+      cursor.continue();
+    })
+    return new Promise((resolve,reject) => {
+      resolve(reviews);
+    });
   }).catch(e => console.error("Some error:", e))
 }
 
@@ -61,12 +67,16 @@ export function putRestaurantsInIDB(restaurants) {
   }).catch(e => "Some error or another: " + e);
 }
 
-export function putReviewsInIDB(reviews) {
+export function putReviewsInIDB(reviews, id) {
   return dbObject.then(db => {
     if (!db) return;
-    const trans = db.transaction('reviews', 'readwrite');
-    const store = trans.objectStore('reviews');
-    reviews.forEach(review => store.put(review));
+    const trans = db.transaction('restaurants', 'readwrite');
+    const store = trans.objectStore('restaurants');
+    store.get(id)
+      .then((restaurant) => {
+        restaurant.reviews = reviews;
+        store.put(restaurant);
+      });
     return trans.complete;
   }).catch(e => "Some error or another: " + e);
 }
