@@ -533,7 +533,7 @@ const initOnlinePost = (formWithInfo) => {
           }) :
           restaurantStore;
         console.log(restaurantStore.postTriesTotalTime);
-        (timedOut && restaurantStore.postTries <= 6) ?
+        (timedOut && restaurantStore.postTries <= 11) ?
           document.dispatchEvent(postTimedOut) :
           document.dispatchEvent(postOffline);
       }) :
