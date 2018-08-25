@@ -2,13 +2,13 @@
 ---
 #### _Three Stage Course Material Project - Restaurant Reviews_
 
-There are many changes here, the foremost of which is that there's a form for posting reviews.
+There are many changes here (all to the restaurant page), the foremost of which is that there's a form for posting reviews.
 
 There's also a button for liking a restaurant
 
 I added a toast messenger for when posts succeed or fail
 
-There are few issues I'm aware of. There are thus: after posts timeout more than 10 times, I should do something other than tell the user to reload and try again.
+There are few issues I'm aware of. These are thus: after posts timeout more than 10 times, I should do something other than tell the user to reload and try again.
 
 The map state can get into a weird situation on the regular sized iPad when the user goes from portrait to landscape without opening the map first. It's... annoying. I'm not sure how to fix it or deal with it.
 
