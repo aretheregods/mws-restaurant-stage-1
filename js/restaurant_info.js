@@ -533,6 +533,7 @@ const initOnlinePost = (formWithInfo) => {
           }) :
           restaurantStore;
         console.log(restaurantStore.postTriesTotalTime);
+        // Should do something else when post fails online...
         (timedOut && restaurantStore.postTries <= 11) ?
           document.dispatchEvent(postTimedOut) :
           document.dispatchEvent(postOffline);
