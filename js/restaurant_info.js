@@ -119,6 +119,12 @@ if (typeof window.CustomEvent === 'function') {
       message: "We're having trouble sending your review. We saved it offline and will try again."
     }
   });
+  var postFailedOut = new CustomEvent('postFailedOut', {
+    bubbles: true,
+    detail: {
+      message: "Your review failed to send. Please reload the page when you have a good connection and try again"
+    }
+  });
   var favoriteFailure = new CustomEvent('favoriteFailure', {
     bubbles: true,
     detail: {
@@ -175,12 +181,14 @@ document.addEventListener('submit', (e) => {
 /**
  * Adds post related event listeners
  */
-for (let listener of ['postOffline', 'favoriteOffline', 'postSuccess', 'favoriteSuccess', 'unfavoriteSuccess', 'postTimedOut', 'favoriteOffline']) {
+for (let listener of ['postOffline', 'favoriteOffline', 'postSuccess', 'favoriteSuccess', 'unfavoriteSuccess', 'postTimedOut', 'postFailedOut', 'favoriteOffline']) {
   document.addEventListener(listener, (e) => {
     showPostToast(e.detail.message);
     window.postTimeOut = listener === 'postTimedOut' && setTimeout(() => {
       initOnlinePost(restaurantStore.thingsToPost[0])
     }, restaurantStore.nextPostWaitTime);
+    listener === 'postFailedOut' &&
+      
     (listener === 'unfavoriteSuccess' ||
       listener === 'favoriteSuccess') &&
       toggleFavorite();
@@ -536,7 +544,7 @@ const initOnlinePost = (formWithInfo) => {
         // Should do something else when post fails online...
         (timedOut && restaurantStore.postTries <= 11) ?
           document.dispatchEvent(postTimedOut) :
-          document.dispatchEvent(postOffline);
+          document.dispatchEvent(postFailedOut);
       }) :
     DBHelper.postRequestRemote(formWithInfo, restaurantStore.restaurant.id)
       .then(res => {
