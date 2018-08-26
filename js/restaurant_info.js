@@ -187,8 +187,6 @@ for (let listener of ['postOffline', 'favoriteOffline', 'postSuccess', 'favorite
     window.postTimeOut = listener === 'postTimedOut' && setTimeout(() => {
       initOnlinePost(restaurantStore.thingsToPost[0])
     }, restaurantStore.nextPostWaitTime);
-    listener === 'postFailedOut' &&
-      
     (listener === 'unfavoriteSuccess' ||
       listener === 'favoriteSuccess') &&
       toggleFavorite();
@@ -239,7 +237,7 @@ const fillRestaurantHTML = (restaurant = restaurantStore.restaurant) => {
           type = document.createElement('span');
   favorite.id = 'favorite';
   favorite.className = `${restaurantStore.restaurant.is_favorite ? 'favorited' : 'unfavorited'}`;
-  favorite.innerHTML = `<button aria-label="Toggle Favorite">&#9829;</button>`;
+  favorite.innerHTML = `<button aria-label="${restaurantStore.restaurant.is_favorite ? 'Remove Restaurant from Favorites' : 'Add Restaurant to Favorites'}">&#9829;</button>`;
   type.textContent = restaurant.cuisine_type;
   cuisine.appendChild(type);
   cuisine.appendChild(favorite);
@@ -608,8 +606,10 @@ const toggleFavorite = () => {
   const favorite = document.getElementById('favorite');
   if (restaurantStore.restaurant.is_favorite) {
     favorite.classList.replace('unfavorited', 'favorited');
+    favorite.getElementsByTagName('button')[0].setAttribute('aria-label', 'Remove Restaurant from Favorites');
   } else {
     favorite.classList.replace('favorited', 'unfavorited');
+    favorite.getElementsByTagName('button')[0].setAttribute('aria-label', 'Add Restaurant to Favorites');
   }
 }
 /**
